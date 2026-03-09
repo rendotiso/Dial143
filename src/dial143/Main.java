@@ -18,7 +18,7 @@ public class Main {
             public void run() {
                 MainFrame frame = new MainFrame();
                 frame.pack();
-                frame.setLocationRelativeTo(null);
+                frame.setLocationRelativeTo(null); // wont work, need fixes
                 frame.setVisible(true);
             }
         });
