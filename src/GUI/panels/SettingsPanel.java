@@ -16,10 +16,6 @@ public class SettingsPanel extends javax.swing.JPanel {
     public SettingsPanel(MainFrame mainFrame) {
         this.mainFrame = mainFrame;
         initComponents();
-        
-        // Style
-        setBackground(new Color(50, 50, 50, 240));
-        setBorder(BorderFactory.createLineBorder(Color.WHITE, 2));
     }
     
     public void showAsPopup() {
@@ -30,12 +26,8 @@ public class SettingsPanel extends javax.swing.JPanel {
             dialog.setContentPane(this);
         }
         
-        // ✅ FORCE center on mainFrame EVERY time
         dialog.setLocationRelativeTo(mainFrame);
-        
-        // Make sure dialog is on top
         dialog.setAlwaysOnTop(true);
-        
         dialog.setVisible(true);
     }
     
@@ -45,12 +37,6 @@ public class SettingsPanel extends javax.swing.JPanel {
         }
     }
     
-
-    
-    // Add getters for buttons if needed
-    public javax.swing.JButton getBtnContinue() { return btnContinue; }
-    public javax.swing.JButton getBtnExit() { return btnExit; }
-    public javax.swing.JButton getBtnSaves() { return btnSaves; }
     
     
     

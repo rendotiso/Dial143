@@ -21,21 +21,8 @@ public class MainFrame extends javax.swing.JFrame {
    
     public MainFrame() {
         initComponents();
-        
-        cardLayout = new CardLayout();
-        mainContainer = new JPanel(cardLayout);
-        
-        TitleScreenPanel titlePanel = new TitleScreenPanel(this); // Pass 'this'
-        DialoguePanel dialoguePanel = new DialoguePanel(this);
-        SettingsPanel settingsPanel = new SettingsPanel(this);
-
-        // Set dialogue panel reference if needed
-        // dialoguePanel.setMainPanel(this);
-        
-
-        mainContainer.add(titlePanel, "title");
-        mainContainer.add(dialoguePanel, "dialogue");
-        mainContainer.add(settingsPanel, "settings");
+        this.setLocationRelativeTo(null);
+        panelObjects();
 
         // Show title screen first
         this.setContentPane(mainContainer);
@@ -46,7 +33,18 @@ public class MainFrame extends javax.swing.JFrame {
     cardLayout.show(mainContainer, screenName);
 }
     
-    
+    public void panelObjects(){
+        cardLayout = new CardLayout();
+        mainContainer = new JPanel(cardLayout);
+        
+        TitleScreenPanel titlePanel = new TitleScreenPanel(this); 
+        DialoguePanel dialoguePanel = new DialoguePanel(this);
+        SettingsPanel settingsPanel = new SettingsPanel(this);    
+        
+        mainContainer.add(titlePanel, "title");
+        mainContainer.add(dialoguePanel, "dialogue");
+        mainContainer.add(settingsPanel, "settings");
+    }
     
     
     

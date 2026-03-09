@@ -5,32 +5,28 @@
 package GUI.panels;
 import GUI.panels.MainFrame; 
 
-
 public class DialoguePanel extends javax.swing.JPanel {
 
         // CODE HERE
        private MainFrame mainPanel;
-       private         SettingsPanel settings;
+       private SettingsPanel settings;
        
     public DialoguePanel() {
         initComponents();
     }
 
      public DialoguePanel(MainFrame mainPanel) {
-           this.mainPanel = mainPanel; // Store reference
+           this.mainPanel = mainPanel; 
            settings = new SettingsPanel(mainPanel);
            initComponents();
     }
     
     
-    
-    
-    
-    
-    
-    
-    
-    
+     
+     
+     
+     
+     
      // BELOW IS THE CODE GENERATURED FROM NETBEANS
     
     /**

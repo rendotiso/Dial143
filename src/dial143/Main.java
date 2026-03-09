@@ -13,26 +13,14 @@ import java.awt.EventQueue;
  * @author renmaya
  */
 public class Main {
-public static void main(String args[]) {
-    EventQueue.invokeLater(new Runnable() {
-        public void run() {
-            MainFrame frame = new MainFrame();
-            
-            // Ensure frame has size
-            frame.pack();            
-            java.awt.Dimension screenSize = java.awt.Toolkit.getDefaultToolkit().getScreenSize();
-            java.awt.Dimension frameSize = frame.getSize();
-            
-            // Calculate center position
-            int x = (screenSize.width - frameSize.width) / 2;
-            int y = (screenSize.height - frameSize.height) / 2;
-            
-            // Force position
-            frame.setLocation(x, y);
-            frame.setVisible(true);
-            
-        }
-    });
-}
-    
+    public static void main(String args[]) {
+        EventQueue.invokeLater(new Runnable() {
+            public void run() {
+                MainFrame frame = new MainFrame();
+                frame.pack();
+                frame.setLocationRelativeTo(null);
+                frame.setVisible(true);
+            }
+        });
+    }
 }
