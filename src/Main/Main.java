@@ -1,4 +1,4 @@
-package dial143;
+package Main;
 
 import GUI.panels.MainFrame;
 import java.awt.EventQueue;
