@@ -8,12 +8,10 @@ import java.awt.EventQueue;
  * Click nbfs://nbhost/SystemFileSystem/Templates/Classes/Class.java to edit this template
  */
 
-/**
- *
- * @author renmaya
- */
 public class Main {
+    
     public static void main(String args[]) {
+        
         EventQueue.invokeLater(new Runnable() {
             public void run() {
                 MainFrame frame = new MainFrame();
@@ -23,4 +21,5 @@ public class Main {
             }
         });
     }
+    
 }

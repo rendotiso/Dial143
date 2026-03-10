@@ -3,13 +3,10 @@
  * Click nbfs://nbhost/SystemFileSystem/Templates/GUIForms/JFrame.java to edit this template
  */
 package GUI.panels;
-import java.awt.EventQueue; 
+
 import java.awt.CardLayout;
 import javax.swing.JPanel;
-/**
- *
- * @author renmaya
- */
+
 public class MainFrame extends javax.swing.JFrame {
     
     // CODE HERE
@@ -30,20 +27,37 @@ public class MainFrame extends javax.swing.JFrame {
     }
     
     public void showScreen(String screenName) {
-    cardLayout.show(mainContainer, screenName);
-}
+        cardLayout.show(mainContainer, screenName);
+        
+         if (screenName.equals("dialogue")) {
+            InteractionPanel dp = (InteractionPanel) mainContainer.getComponent(1); // or however you access it
+            dp.loadTestContent();
+        }
+    }
     
     public void panelObjects(){
         cardLayout = new CardLayout();
         mainContainer = new JPanel(cardLayout);
         
         TitleScreenPanel titlePanel = new TitleScreenPanel(this); 
-        DialoguePanel dialoguePanel = new DialoguePanel(this);
+        InteractionPanel dialoguePanel = new InteractionPanel(this);
         SettingsPanel settingsPanel = new SettingsPanel(this);    
+        
+//        SavePanel savePanel = new SavePanel(this);
+//        ShiftPanel shiftPanel = new shiftPanel(this);
+//        InventoryPanel inventoryPanel = new InventoryPanel(this);
+//        ShopPanel shopPanel = new ShopPanel(this);
+              
         
         mainContainer.add(titlePanel, "title");
         mainContainer.add(dialoguePanel, "dialogue");
         mainContainer.add(settingsPanel, "settings");
+        
+//        mainContainer.add(shiftPanel, "shift");
+//        mainContainer.add(shopPanel, "shop");
+//        mainContainer.add(inventoryPanel, "inventory");
+//        mainContainer.add(savePanel, "save");
+        
     }
     
     

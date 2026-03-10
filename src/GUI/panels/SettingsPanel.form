@@ -57,6 +57,7 @@
     <Component class="javax.swing.JButton" name="btnExit">
       <Properties>
         <Property name="text" type="java.lang.String" value="Exit"/>
+        <Property name="focusable" type="boolean" value="false"/>
       </Properties>
       <Events>
         <EventHandler event="actionPerformed" listener="java.awt.event.ActionListener" parameters="java.awt.event.ActionEvent" handler="btnExitActionPerformed"/>
@@ -65,6 +66,7 @@
     <Component class="javax.swing.JButton" name="btnSaves">
       <Properties>
         <Property name="text" type="java.lang.String" value="Saves"/>
+        <Property name="focusable" type="boolean" value="false"/>
       </Properties>
       <Events>
         <EventHandler event="actionPerformed" listener="java.awt.event.ActionListener" parameters="java.awt.event.ActionEvent" handler="btnSavesActionPerformed"/>
@@ -73,6 +75,7 @@
     <Component class="javax.swing.JButton" name="btnContinue">
       <Properties>
         <Property name="text" type="java.lang.String" value="Continue"/>
+        <Property name="focusable" type="boolean" value="false"/>
       </Properties>
       <Events>
         <EventHandler event="actionPerformed" listener="java.awt.event.ActionListener" parameters="java.awt.event.ActionEvent" handler="btnContinueActionPerformed"/>

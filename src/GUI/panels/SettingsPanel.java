@@ -1,7 +1,3 @@
-/*
- * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
- * Click nbfs://nbhost/SystemFileSystem/Templates/GUIForms/JPanel.java to edit this template
- */
 package GUI.panels;
 
 import GUI.panels.MainFrame;
@@ -59,12 +55,15 @@ public class SettingsPanel extends javax.swing.JPanel {
         setPreferredSize(new java.awt.Dimension(300, 350));
 
         btnExit.setText("Exit");
+        btnExit.setFocusable(false);
         btnExit.addActionListener(this::btnExitActionPerformed);
 
         btnSaves.setText("Saves");
+        btnSaves.setFocusable(false);
         btnSaves.addActionListener(this::btnSavesActionPerformed);
 
         btnContinue.setText("Continue");
+        btnContinue.setFocusable(false);
         btnContinue.addActionListener(this::btnContinueActionPerformed);
 
         lblSettings.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
@@ -103,7 +102,7 @@ public class SettingsPanel extends javax.swing.JPanel {
 
     private void btnExitActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnExitActionPerformed
         if (mainFrame != null) {
-            mainFrame.showScreen("title"); // Go to title screen
+            mainFrame.showScreen("title"); 
             hidePopup();
         }
     }//GEN-LAST:event_btnExitActionPerformed
