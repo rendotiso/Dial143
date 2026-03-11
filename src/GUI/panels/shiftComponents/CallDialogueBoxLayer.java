@@ -42,9 +42,8 @@ public class CallDialogueBoxLayer extends JPanel {
     private List<Integer> remainingCalls = new ArrayList<>();
     private int totalCalls = 5;
 
-    // Faster transition timing
-    private static final int RESPONSE_DELAY_MS = 800; // Reduced from 2000ms to 800ms
-    private static final int NEXT_CALL_DELAY_MS = 300; // Delay before loading next call
+    private static final int RESPONSE_DELAY_MS = 800; 
+    private static final int NEXT_CALL_DELAY_MS = 300; 
 
     public CallDialogueBoxLayer() {
         setOpaque(false);
@@ -74,7 +73,6 @@ public class CallDialogueBoxLayer extends JPanel {
         for (int i = 0; i < totalCalls; i++) remainingCalls.add(i);
         Collections.shuffle(remainingCalls);
         callNumber = 0;
-        System.out.println("New shift started. Calls remaining: " + remainingCalls.size());
     }
 
     public boolean hasMoreCalls()        { return !remainingCalls.isEmpty(); }
@@ -204,10 +202,6 @@ public class CallDialogueBoxLayer extends JPanel {
 
         startTypewriter();
         repaint();
-
-        System.out.println("Loading call " + (callIndex + 1) + ": " + callerName);
-        System.out.println("Call " + callNumber + " of " + totalCalls);
-        System.out.println("Calls remaining: " + remainingCalls.size());
     }
 
     // ── Timer controls ────────────────────────────────────────────────────────
@@ -249,7 +243,6 @@ public class CallDialogueBoxLayer extends JPanel {
     }
 
     private void startTimer() {
-        // Stop any existing countdown timer
         if (countdownTimer != null && countdownTimer.isRunning()) {
             countdownTimer.stop();
         }
@@ -292,7 +285,6 @@ public class CallDialogueBoxLayer extends JPanel {
     private void selectChoice(int index) {
         if (chosenIndex != -1) return;
         
-        // Stop all timers
         stopAll();
         
         chosenIndex  = index;
@@ -310,23 +302,19 @@ public class CallDialogueBoxLayer extends JPanel {
         responseIndex     = 0;
         showingResponse   = true;
 
-        // Faster typewriter for response
-        responseTimer = new Timer(10, e -> { // Reduced from 14ms to 10ms
+        responseTimer = new Timer(10, e -> { 
             if (responseIndex < fullResponse.length()) {
                 displayedResponse = fullResponse.substring(0, ++responseIndex);
                 repaint();
             } else {
                 ((Timer) e.getSource()).stop();
                 
-                // Cancel any existing delay timer
                 if (delayTimer != null && delayTimer.isRunning()) {
                     delayTimer.stop();
                 }
                 
-                // Shorter delay before next call
                 delayTimer = new Timer(RESPONSE_DELAY_MS, de -> {
                     if (onCallComplete != null) {
-                        // Use invokeLater to ensure clean transition
                         SwingUtilities.invokeLater(() -> onCallComplete.run());
                     }
                     delayTimer = null;

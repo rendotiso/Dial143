@@ -44,7 +44,6 @@ public class InteractionPanel extends javax.swing.JPanel {
 
         uiComponents.onSettingsClosed(() -> requestFocusInWindow());
        
-        // Initialize IdentityPopupPanel instead of IdentityCreationLayer
         identityPopup = new IdentityCreationLayer(mainPanel);
         identityPopup.setOnComplete(() -> {
             showingIdentityCreation = false;
@@ -53,7 +52,6 @@ public class InteractionPanel extends javax.swing.JPanel {
 
         choices = new ChoiceButtonLayer();
         
-        // Note: identityPopup is not added as a component - it's a separate dialog
         add(choices);
         add(uiComponents);
         add(dialogueBox);
@@ -65,8 +63,6 @@ public class InteractionPanel extends javax.swing.JPanel {
             protected Void doInBackground() {
                 sprite.addSprite("Amaya",     "Amaya_Default_Smiling.PNG");
                 sprite.addSprite("Rosario",   "Rosario_Default_Listening.PNG");
-                sprite.addSprite("Homosexual", "placeholderSprite3.png");
-                sprite.addSprite("Broke ahh",  "placeholderSprite4.png");
                 bg.preload("placeholderBG.jpg", "placeholderBG2.jpg", "placeholderBG3.jpg");
                 return null;
             }
@@ -91,29 +87,22 @@ public class InteractionPanel extends javax.swing.JPanel {
 
     // SCENE DEFINITIONS
     private final String[][] morningScenes = {
-        // Scene 0 - Sky view
         {"Narrator", "Your day started as normal. However, this day was one of the ones where you were much more upbeat than usual.", "none", "placeholderBG.jpg"},
         
-        // Scene 1 - Company building exterior
         {"Narrator", "It was now time to start your very first job after graduation. It was not an easy one to get hold of, and the starting pay was enough to pay off bills and necessities.", 
             "none", "placeholderBG2.jpg"},
         
-        // Scene 2 - Narrator talks about ID
         {"Narrator", "You pat off any creases from your office wear, and finally took one last look at your company ID.", "none", "placeholderBG3.jpg"},
-        
-        // Scene 3 - SPECIAL: Identity Creation (not a normal scene)
+
         {"IDENTITY_CREATION", "", "", ""},
         
-        // Scene 4 - Company building interior (after ID is created)
         {"Narrator", "You step inside the building, ready for your first day.", "none", "placeholderBG3.jpg"},
         
-        // More morning scenes
         {"Amaya", "Good morning, {name}! Ready for your first shift?", "single:Amaya", "placeholderBG.jpg"},
         {"Rosario", "Don't worry Amaya, {pronoun_subject} can do this. ","single:Rosario", "placeholderBG.jpg"},
     };
 
     private final String[][] eveningScenes = {
-        // Evening scenes after shift
         {"Narrator", "The shift is finally over. The evening air feels cool and refreshing.", "none", "placeholderBG2.jpg"},
         {"Amaya", "Great job today, {name}! You handled those calls really well.", "single:Amaya", "placeholderBG.jpg"},
         {"Rosario", "I'm impressed with how quickly {pronoun_subject}'s learning.", "single:Rosario", "placeholderBG.jpg"},
@@ -121,7 +110,7 @@ public class InteractionPanel extends javax.swing.JPanel {
     };
 
     private final String[][] endingScenes = {
-        // Game ending scenes
+        
         {"Narrator", "And so your journey comes to an end...", "none", "placeholderBG2.jpg"},
         {"Amaya", "{name}, I'll never forget the time we spent working together.", "single:Amaya", "placeholderBG.jpg"},
         {"Rosario", "You've grown so much since your first day.", "single:Rosario", "placeholderBG.jpg"},
@@ -162,26 +151,22 @@ public class InteractionPanel extends javax.swing.JPanel {
         String spriteSpec = scene[2];
         String backgroundName = scene[3];
         
-        // Check for special IDENTITY_CREATION scene
         if (speaker.equals("IDENTITY_CREATION")) {
-            // Show identity popup (background remains visible)
+            
             showingIdentityCreation = true;
             
-            // Use SwingUtilities.invokeLater to ensure dialog shows properly
             SwingUtilities.invokeLater(() -> {
                 identityPopup.reset();
-                identityPopup.showAsPopup(); // This blocks until closed
+                identityPopup.showAsPopup(); 
             });
             
             return;
         }
         
-        // Hide identity creation flag if it was showing
         if (showingIdentityCreation) {
             showingIdentityCreation = false;
         }
-
-        // Normal scene loading continues...
+        
         if (backgroundName != null && !backgroundName.isEmpty()) {
             bg.setBackgroundFromFile(backgroundName);
         } else {
@@ -191,7 +176,6 @@ public class InteractionPanel extends javax.swing.JPanel {
         dialogueBox.setSpeaker(speaker);
         dialogueBox.setDialogue(text);
 
-        // Handle sprite display
         if (spriteSpec.equals("none")) {
             sprite.hideAllSprites();
         } else if (spriteSpec.startsWith("two:")) {
