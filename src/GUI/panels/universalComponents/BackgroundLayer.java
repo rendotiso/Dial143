@@ -1,4 +1,4 @@
-package GUI.panels.dialogueComponents;
+package GUI.panels.universalComponents;
 
 import javax.swing.*;
 import java.awt.*;
@@ -16,7 +16,7 @@ public class BackgroundLayer extends JPanel {
     
 public BackgroundLayer() {
     setLayout(null);
-    setOpaque(true); // bottommost — should be opaque
+    setOpaque(true); 
     setPreferredSize(new Dimension(1280, 720));
 }
 
@@ -29,7 +29,6 @@ public BackgroundLayer() {
             repaint();
             return;
         }
-        // fallback to original load + cache it
         String resourcePath = "/GUI/resources/backgrounds/" + filename;
         setBackgroundImage(resourcePath);
         if (backgroundImage != null) imageCache.put(filename, backgroundImage);

@@ -4,8 +4,8 @@
  */
 package GUI.panels;
 
-import GUI.panels.dialogueComponents.BackgroundLayer;
-import GUI.panels.dialogueComponents.TopBarComponents;
+import GUI.panels.universalComponents.BackgroundLayer;
+import GUI.panels.universalComponents.TopBarComponents;
 import GUI.panels.shopComponents.*;
 import java.awt.Dimension;
 import javax.swing.JPanel;

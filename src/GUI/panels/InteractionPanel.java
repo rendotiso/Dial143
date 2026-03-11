@@ -1,10 +1,7 @@
-/*
- * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
- * Click nbfs://nbhost/SystemFileSystem/Templates/GUIForms/JPanel.java to edit this template
- */
-
 package GUI.panels;
 
+import GUI.panels.universalComponents.BackgroundLayer;
+import GUI.panels.universalComponents.TopBarComponents;
 import GUI.panels.dialogueComponents.*;
 import GUI.panels.MainFrame;
 import javax.swing.*;
@@ -13,232 +10,216 @@ import java.awt.event.*;
 import GUI.panels.inventoryComponents.ItemLayer;
 
 public class InteractionPanel extends javax.swing.JPanel {
-    private MainFrame mainPanel;
-    private BackgroundLayer bg;
-    private SpriteLayer sprite;
-    private DialogueBoxLayer dialogueBox;
-    private TopBarComponents uiComponents;
+
+    private MainFrame         mainPanel;
+    private BackgroundLayer   bg;
+    private SpriteLayer       sprite;
+    private DialogueBoxLayer  dialogueBox;
+    private TopBarComponents  uiComponents;
     private ChoiceButtonLayer choices;
-    private SettingsPanel settings; // Keep this
-
-
+    private SettingsPanel     settings;
+    private IdentityCreationLayer identityPopup; // Changed from IdentityCreationLayer
+    private boolean showingIdentityCreation = false;
 
     private int currentScene = 0;
 
-    public InteractionPanel(MainFrame mainPanel, SettingsPanel sharedSettings) { // Add parameter
+    public InteractionPanel(MainFrame mainPanel, SettingsPanel sharedSettings) {
         this.mainPanel = mainPanel;
-        this.settings = sharedSettings; // Use shared settings
-        
+        this.settings  = sharedSettings;
         initComponents();
         initializeLayers();
     }
 
     private void initializeLayers() {
-        bg = new BackgroundLayer();
-        sprite = new SpriteLayer();
-        dialogueBox = new DialogueBoxLayer();
+        bg          = new BackgroundLayer();
+        sprite      = new SpriteLayer();
+        dialogueBox = new DialogueBoxLayer(mainPanel);
 
-            uiComponents = new TopBarComponents(mainPanel);
-            uiComponents.setSettingsPanel(settings); // This line is crucial!
-            uiComponents.setParentScreen("dialogue");
+        uiComponents = new TopBarComponents(mainPanel);
+        uiComponents.setSettingsPanel(settings);
+        uiComponents.setParentScreen("dialogue");
 
         InventoryPanel inventory = new InventoryPanel(mainPanel);
         uiComponents.setInventoryPanel(inventory);
 
-        // Optional: Add callbacks if you need to pause anything
-        uiComponents.onSettingsOpening(() -> {
-            // Pause any ongoing animations if needed
-        });
-
-        uiComponents.onSettingsClosed(() -> {
-            // Resume any paused animations
-            requestFocusInWindow();
+        uiComponents.onSettingsClosed(() -> requestFocusInWindow());
+       
+        // Initialize IdentityPopupPanel instead of IdentityCreationLayer
+        identityPopup = new IdentityCreationLayer(mainPanel);
+        identityPopup.setOnComplete(() -> {
+            showingIdentityCreation = false;
+            advanceScene(); 
         });
 
         choices = new ChoiceButtonLayer();
-
+        
+        // Note: identityPopup is not added as a component - it's a separate dialog
         add(choices);
         add(uiComponents);
         add(dialogueBox);
         add(sprite);
         add(bg);
 
-        choices.setChoiceListener((text, node) -> onChoiceSelected(text, node));
-        
-         new SwingWorker<Void, Void>() {
+        new SwingWorker<Void, Void>() {
             @Override
             protected Void doInBackground() {
-                sprite.addSprite("Chiaki", "placeholderSprite.png");
-                sprite.addSprite("Rando", "placeholderSprite2.png");
+                sprite.addSprite("Amaya",     "Amaya_Default_Smiling.PNG");
+                sprite.addSprite("Rosario",   "Rosario_Default_Listening.PNG");
                 sprite.addSprite("Homosexual", "placeholderSprite3.png");
-                sprite.addSprite("Broke ahh", "placeholderSprite4.png");
-                bg.preload("placeholderBG.jpg", "placeholderBG2.jpg");
+                sprite.addSprite("Broke ahh",  "placeholderSprite4.png");
+                bg.preload("placeholderBG.jpg", "placeholderBG2.jpg", "placeholderBG3.jpg");
                 return null;
             }
         }.execute();
     }
-    
-    private void saveStats() {
-    mainPanel.setPP(uiComponents.getCurrentPpValue());
-    mainPanel.setLP(uiComponents.getCurrentLpValue());
-    mainPanel.setSalary(uiComponents.getCurrentSalaryValue());
-}
-    
-    //DELETE ONCE WITH STORY
-private String[][] scenes = {
-    // Single sprite
-    {"Chiaki", "Hi there! Welcome to the dating sim!", "single:Chiaki", "placeholderBG.jpg"},
-    // No sprite
-    {"Narrator", "The room falls silent...", "none", "placeholderBG.jpg"},
-    // Two sprites
-    {"Chiaki", "Would you like to hang out sometime?", "two:Chiaki:Rando", "placeholderBG2.jpg"},
-    // No sprite
-    {"Narrator", "An awkward silence fills the air.", "none", "placeholderBG2.jpg"},
-    // Single sprite, different character
-    {"Rando", "Oh, hey! I didn't see you there!", "single:Rando", "placeholderBG.jpg"},
-    // Two sprites again
-    {"Chiaki", "We have class together, right?", "two:Rando:Chiaki", "placeholderBG2.jpg"},
-    
-    {"Rando", "Yes, we do!","two:Rando:Chiaki", "placeholderBG2.jpg"},
-    // No sprite
-    {"Narrator", "The beach stretches out endlessly.", "none", "placeholderBG2.jpg"},
-    // Single sprite
-    {"Rando", "The beach is beautiful today!", "single:Rando", "placeholderBG2.jpg"},
-    
-    {"Homosexual", "I like men", "triple:Homosexual:Rando:Chiaki","placeholderBG2.jpg"},
-    
-    {"Broke ahh", "Dawg you spitting fax frfr", "quadruple:Homosexual:Broke ahh:Rando:Chiaki", "placeholderBG2.jpg"},
-    
-    {"Narrator", "what the fuck did I just witness. What kind of testing is this. Are you crazy? Crazy? I was crazy once. "
-        + "They locked me in a room. A rubber room. A rubber room with rats. And rats make me crazy." +  "Are you crazy? Crazy? I was crazy once. "
-        + "They locked me in a room. A rubber room. A rubber room with rats. And rats make me crazy."+  "Are you crazy? Crazy? I was crazy once. "
-        + "They locked me in a room. A rubber room. A rubber room with rats. And rats make me crazy."+  "Are you crazy? Crazy? I was crazy once. "
-        + "They locked me in a room. A rubber room. A rubber room with rats. And rats make me crazy."+  "Are you crazy? Crazy? I was crazy once. "
-        + "They locked me in a room. A rubber room. A rubber room with rats. And rats make me crazy."+  "Are you crazy? Crazy? I was crazy once. "
-        + "They locked me in a room. A rubber room. A rubber room with rats. And rats make me crazy."+  "Are you crazy? Crazy? I was crazy once. "
-        + "They locked me in a room. A rubber room. A rubber room with rats. And rats make me crazy."+  "Are you crazy? Crazy? I was crazy once. "
-        + "They locked me in a room. A rubber room. A rubber room with rats. And rats make me crazy.", "none", "placeholderBG2.jpg"}
-   
-};
-        
-    public void loadTestContent() {
+
+    // LOADING CONTENT, FOR MAIN FRAME
+    public void loadContent() {
         uiComponents.setPpValue(mainPanel.getPP());
         uiComponents.setLpValue(mainPanel.getLP());
         uiComponents.setSalaryValue(mainPanel.getSalary());
-        bg.setBackgroundColor(new Color(20, 30, 40));
-        currentScene = 0;
+        currentScene = mainPanel.getDialogueScene();
         loadScene(currentScene);
     }
 
+    // SAVING STATS
+    private void saveStats() {
+        mainPanel.setPP(uiComponents.getCurrentPpValue());
+        mainPanel.setLP(uiComponents.getCurrentLpValue());
+        mainPanel.setSalary(uiComponents.getCurrentSalaryValue());
+    }
+
+    // SCENE DEFINITIONS
+    private final String[][] morningScenes = {
+        // Scene 0 - Sky view
+        {"Narrator", "Your day started as normal. However, this day was one of the ones where you were much more upbeat than usual.", "none", "placeholderBG.jpg"},
+        
+        // Scene 1 - Company building exterior
+        {"Narrator", "It was now time to start your very first job after graduation. It was not an easy one to get hold of, and the starting pay was enough to pay off bills and necessities.", 
+            "none", "placeholderBG2.jpg"},
+        
+        // Scene 2 - Narrator talks about ID
+        {"Narrator", "You pat off any creases from your office wear, and finally took one last look at your company ID.", "none", "placeholderBG3.jpg"},
+        
+        // Scene 3 - SPECIAL: Identity Creation (not a normal scene)
+        {"IDENTITY_CREATION", "", "", ""},
+        
+        // Scene 4 - Company building interior (after ID is created)
+        {"Narrator", "You step inside the building, ready for your first day.", "none", "placeholderBG3.jpg"},
+        
+        // More morning scenes
+        {"Amaya", "Good morning, {name}! Ready for your first shift?", "single:Amaya", "placeholderBG.jpg"},
+        {"Rosario", "Don't worry Amaya, {pronoun_subject} can do this. ","single:Rosario", "placeholderBG.jpg"},
+    };
+
+    private final String[][] eveningScenes = {
+        // Evening scenes after shift
+        {"Narrator", "The shift is finally over. The evening air feels cool and refreshing.", "none", "placeholderBG2.jpg"},
+        {"Amaya", "Great job today, {name}! You handled those calls really well.", "single:Amaya", "placeholderBG.jpg"},
+        {"Rosario", "I'm impressed with how quickly {pronoun_subject}'s learning.", "single:Rosario", "placeholderBG.jpg"},
+        {"Narrator", "You feel a sense of accomplishment as you head home.", "none", "placeholderBG.jpg"},
+    };
+
+    private final String[][] endingScenes = {
+        // Game ending scenes
+        {"Narrator", "And so your journey comes to an end...", "none", "placeholderBG2.jpg"},
+        {"Amaya", "{name}, I'll never forget the time we spent working together.", "single:Amaya", "placeholderBG.jpg"},
+        {"Rosario", "You've grown so much since your first day.", "single:Rosario", "placeholderBG.jpg"},
+        {"Narrator", "THE END", "none", "placeholderBG2.jpg"},
+    };
+
+    // Get current scenes based on segment
+    private String[][] getCurrentScenes() {
+        switch (mainPanel.getCurrentSegment()) {
+            case MORNING:
+                return morningScenes;
+            case EVENING:
+                return eveningScenes;
+            case ENDING:
+                return endingScenes;
+            default:
+                return morningScenes;
+        }
+    }
+
+    // Load a specific scene
     private void loadScene(int sceneIndex) {
-     if (sceneIndex < scenes.length) {
-         String[] scene = scenes[sceneIndex];
+        String[][] scenes = getCurrentScenes();
 
-         String speaker = scene[0];
-         String text = scene[1];
-         String spriteSpec = scene[2];
-         String backgroundName = scene[3];
-
-         if (backgroundName != null && !backgroundName.isEmpty()) {
-             bg.setBackgroundFromFile(backgroundName);
-         } else {
-             bg.setBackgroundColor(new Color(20, 30, 40));
-         }
-
-         dialogueBox.setSpeaker(speaker);
-         dialogueBox.setDialogue(text);
-
-         // Parse sprite spec
-         if (spriteSpec.equals("none")) {
-             sprite.hideAllSprites();
-         } else if (spriteSpec.startsWith("two:")) {
-             String[] parts = spriteSpec.split(":");
-             sprite.showTwoSprites(parts[1], parts[2]);
-         } else if (spriteSpec.startsWith("single:")) {
-             String[] parts = spriteSpec.split(":");
-             sprite.showSingleSprite(parts[1]);
-          } else if (spriteSpec.startsWith("triple:")) {
-               String[] parts = spriteSpec.split(":");
-               sprite.showThreeSprites(parts[1], parts[2], parts[3]);
-           } else if (spriteSpec.startsWith("quadruple:")) {
-               String[] parts = spriteSpec.split(":");
-               sprite.showFourSprites(parts[1], parts[2], parts[3], parts[4]);
-           }else {
-             // fallback: treat as single character name
-             sprite.showSingleSprite(spriteSpec);
-         }
-
-         if (sceneIndex == 2) {
-             showChoicesAtScene2();
-         } else {
-             choices.hideChoices();
-         }
-
-         revalidate();
-         repaint();
-     }
- }
-
-    private void showChoicesAtScene2(){
-
-        choices.clearChoices();
-
-        choices.addChoice("Sure, I'd love to!","accept_date");
-        choices.addChoice("Maybe another time","decline_date");
-        choices.addChoice("What did you have in mind?","ask_details");
-
-        choices.showChoices();
-    }
-    
-    private void advanceScene() {
-    if (currentScene + 1 < scenes.length) {
-        currentScene++;
-        loadScene(currentScene);
-    } else {
-        saveStats();
-        mainPanel.showScreen("shift");
-    }
-}
-    
-    private void onChoiceSelected(String choiceText,String nextNode){
-
-        if(choiceText.equals("Sure, I'd love to!")){
-
-            dialogueBox.setSpeaker("Chiaki");
-            dialogueBox.setDialogue("Great! How about coffee this weekend?");
-            sprite.showCharacter("Chiaki");
-            uiComponents.addLpPoints(10);
-
+        if (sceneIndex >= scenes.length) {
+            saveStats();
+            switch (mainPanel.getCurrentSegment()) {
+                case MORNING -> mainPanel.onMorningComplete();
+                case EVENING -> mainPanel.onEveningComplete();
+                case ENDING  -> mainPanel.onGameComplete();
+            }
+            return;
         }
 
-        else if(choiceText.equals("Maybe another time")){
-
-            dialogueBox.setSpeaker("Chiaki");
-            dialogueBox.setDialogue("Oh, okay... maybe next time then.");
-            sprite.showCharacter("Chiaki");
-            uiComponents.addLpPoints(-5);
-
+        String[] scene = scenes[sceneIndex];
+        String speaker = scene[0];
+        String text = scene[1];
+        String spriteSpec = scene[2];
+        String backgroundName = scene[3];
+        
+        // Check for special IDENTITY_CREATION scene
+        if (speaker.equals("IDENTITY_CREATION")) {
+            // Show identity popup (background remains visible)
+            showingIdentityCreation = true;
+            
+            // Use SwingUtilities.invokeLater to ensure dialog shows properly
+            SwingUtilities.invokeLater(() -> {
+                identityPopup.reset();
+                identityPopup.showAsPopup(); // This blocks until closed
+            });
+            
+            return;
+        }
+        
+        // Hide identity creation flag if it was showing
+        if (showingIdentityCreation) {
+            showingIdentityCreation = false;
         }
 
-        else if(choiceText.equals("What did you have in mind?")){
+        // Normal scene loading continues...
+        if (backgroundName != null && !backgroundName.isEmpty()) {
+            bg.setBackgroundFromFile(backgroundName);
+        } else {
+            bg.setBackgroundColor(new Color(20, 30, 40));
+        }
 
-            dialogueBox.setSpeaker("Chiaki");
-            dialogueBox.setDialogue("I was thinking dinner downtown.");
-            sprite.showCharacter("Chiaki");
-            uiComponents.addLpPoints(5);
+        dialogueBox.setSpeaker(speaker);
+        dialogueBox.setDialogue(text);
 
+        // Handle sprite display
+        if (spriteSpec.equals("none")) {
+            sprite.hideAllSprites();
+        } else if (spriteSpec.startsWith("two:")) {
+            String[] parts = spriteSpec.split(":");
+            sprite.showTwoSprites(parts[1], parts[2]);
+        } else if (spriteSpec.startsWith("single:")) {
+            String[] parts = spriteSpec.split(":");
+            sprite.showSingleSprite(parts[1]);
+        } else if (spriteSpec.startsWith("triple:")) {
+            String[] parts = spriteSpec.split(":");
+            sprite.showThreeSprites(parts[1], parts[2], parts[3]);
+        } else if (spriteSpec.startsWith("quadruple:")) {
+            String[] parts = spriteSpec.split(":");
+            sprite.showFourSprites(parts[1], parts[2], parts[3], parts[4]);
+        } else {
+            sprite.showSingleSprite(spriteSpec);
         }
 
         choices.hideChoices();
 
-        Timer timer = new Timer(1500,e->{
+        revalidate();
+        repaint();
+    }
 
-            advanceScene();
-
-        });
-
-        timer.setRepeats(false);
-        timer.start();
+    private void advanceScene() {
+        currentScene++;
+        mainPanel.setDialogueScene(currentScene);
+        loadScene(currentScene);
     }
     
      
@@ -263,11 +244,9 @@ private String[][] scenes = {
     }// </editor-fold>//GEN-END:initComponents
 
     private void formMouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_formMouseClicked
-                // Only advance if choices are not showing
-                // EDIT ONCE WITH STORY
-                if (!choices.isVisible()) {
-                    advanceScene();
-                }
+            if (!choices.isVisible() && !showingIdentityCreation) {
+                advanceScene();
+            }
     }//GEN-LAST:event_formMouseClicked
 
 

@@ -66,6 +66,15 @@ public class CallCreation {
         return y + 4;
     }
 
+    public static int drawTitle(Graphics2D g2, int currentCall, int totalCalls) {
+        int y = BOX_Y + PAD;
+        g2.setFont(new Font("Arial", Font.BOLD, 18));
+        g2.setColor(TITLE_COLOR);
+        String title = "CALL " + currentCall + " OF " + totalCalls;
+        g2.drawString(title, BOX_X + PAD, y);
+        return y + 4;
+    }
+
     public static int drawDivider(Graphics2D g2, int y) {
         g2.setColor(DIVIDER_COLOR);
         g2.setStroke(new BasicStroke(1f));

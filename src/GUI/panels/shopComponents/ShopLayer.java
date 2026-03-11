@@ -4,10 +4,10 @@
  */
 package GUI.panels.shopComponents;
 
-/**
- *
- * @author renmaya
- */
-public class ShopLayer {
+import javax.swing.*;
+import java.awt.*;
+import java.awt.event.*;
+
+public class ShopLayer extends JPanel{
     
 }

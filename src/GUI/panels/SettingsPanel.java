@@ -67,7 +67,6 @@ public class SettingsPanel extends javax.swing.JPanel {
     
     public void hidePopup() {
         if (dialog != null && dialog.isVisible()) {
-            // Remove the window listener to prevent multiple triggers
             if (currentListener != null) {
                 dialog.removeWindowListener(currentListener);
             }

@@ -1,4 +1,4 @@
-package GUI.panels.dialogueComponents;
+package GUI.panels.universalComponents;
 
 import GUI.panels.*;
 import javax.swing.*;
@@ -79,7 +79,6 @@ public class TopBarComponents extends JPanel {
         btnSettings = new JButton("Settings");
         btnSettings.setBounds(1150, 15, 100, 35);
         styleButton(btnSettings);
-        // Action listener is added in setupSettingsButton() after setSettingsPanel() is called
         add(btnSettings);
 
         setComponentZOrder(ppLabel,      0);
@@ -89,8 +88,6 @@ public class TopBarComponents extends JPanel {
         setComponentZOrder(btnInventory, 4);
         setComponentZOrder(btnSettings,  5);
     }
-
-    // ── Wiring ────────────────────────────────────────────────────────────────
 
     public void setSettingsPanel(SettingsPanel settings) {
         this.settings = settings;

@@ -43,7 +43,6 @@ public class ChoiceButtonLayer extends JPanel {
             setOpaque(true);
             
             if (unlocked) {
-                // Add hover effect for unlocked buttons
                 addMouseListener(new java.awt.event.MouseAdapter() {
                     public void mouseEntered(java.awt.event.MouseEvent evt) {
                         setBackground(hoverColor);
@@ -53,7 +52,6 @@ public class ChoiceButtonLayer extends JPanel {
                     }
                 });
             } else {
-                // Add lock icon indicator for locked choices
                 setText("🔒 " + text);
             }
         }
@@ -75,7 +73,7 @@ public class ChoiceButtonLayer extends JPanel {
     @Override public Dimension getPreferredSize() { return new Dimension(1280, 720); }
 
     public void addChoice(String text, String nextNode) {
-        addChoice(text, nextNode, true); // Default to unlocked
+        addChoice(text, nextNode, true);
     }
     
     public void addChoice(String text, String nextNode, boolean unlocked) {
@@ -89,11 +87,8 @@ public class ChoiceButtonLayer extends JPanel {
                 setVisible(false);
             });
         } else {
-            // Locked buttons don't do anything when clicked
             btn.addActionListener(e -> {
-                // Play error sound or show message
                 System.out.println("This choice is locked!");
-                // You could also show a tooltip or temporary message
             });
         }
         
@@ -111,8 +106,7 @@ public class ChoiceButtonLayer extends JPanel {
     public void showChoices() {
         int numChoices = choiceButtons.size();
         
-        // Calculate positions based on number of choices
-        int centerX = 640; // Center of screen (1280/2)
+        int centerX = 640; 
         int startY;
         int buttonWidth = 400;
         int buttonHeight = 60;
@@ -136,7 +130,6 @@ public class ChoiceButtonLayer extends JPanel {
                 positionButtons(startY, buttonWidth, buttonHeight, spacing);
                 break;
             default:
-                // Default positioning
                 startY = 200;
                 positionButtons(startY, buttonWidth, buttonHeight, spacing);
         }
@@ -164,7 +157,6 @@ public class ChoiceButtonLayer extends JPanel {
         this.listener = listener;
     }
     
-    // Method to update a choice's locked/unlocked state
     public void setChoiceLocked(int index, boolean locked) {
         if (index >= 0 && index < choiceButtons.size()) {
             ChoiceButton btn = choiceButtons.get(index);
@@ -173,11 +165,9 @@ public class ChoiceButtonLayer extends JPanel {
             btn.setBackground(btn.normalColor);
             btn.setForeground(btn.unlocked ? textUnlocked : textLocked);
             
-            // Update button text with lock icon if locked
             String currentText = btn.getText().replace("🔒 ", "");
             btn.setText(btn.unlocked ? currentText : "🔒 " + currentText);
             
-            // Remove old action listeners and add new ones based on state
             for (ActionListener al : btn.getActionListeners()) {
                 btn.removeActionListener(al);
             }
@@ -201,7 +191,6 @@ public class ChoiceButtonLayer extends JPanel {
         return false;
     }
     
-    // Method to get the number of choices
     public int getChoiceCount() {
         return choiceButtons.size();
     }
@@ -213,15 +202,12 @@ public class ChoiceButtonLayer extends JPanel {
         if (isVisible()) {
             Graphics2D g2d = (Graphics2D) g.create();
             
-            // Darken the background behind choices
             g2d.setColor(new Color(0, 0, 0, 150));
             g2d.fillRect(0, 0, getWidth(), getHeight());
             
             g2d.dispose();
         }
     }
-    
-    // Custom methods for different choice configurations
     
     public void show2Choices(String choice1, String node1, 
                              String choice2, String node2) {
@@ -267,8 +253,6 @@ public class ChoiceButtonLayer extends JPanel {
         showChoices();
     }
     
-    // Methods for choices with locked states
-    
     public void show2ChoicesWithLock(String choice1, String node1, boolean unlocked1,
                                      String choice2, String node2, boolean unlocked2) {
         clearChoices();
@@ -313,7 +297,6 @@ public class ChoiceButtonLayer extends JPanel {
         showChoices();
     }
     
-    // Setters for customizing colors
     public void setUnlockedColor(Color color) {
         this.unlockedColor = color;
     }

@@ -1,5 +1,6 @@
 package GUI.panels.dialogueComponents; 
 
+import GUI.panels.MainFrame;
 import javax.swing.*;
 import java.awt.*;
 import java.awt.image.BufferedImage;
@@ -7,6 +8,7 @@ import java.io.InputStream;
 
 public class DialogueBoxLayer extends JPanel {
     
+    private MainFrame mainFrame;
     private Font mulishFont; 
     private Font unicaFont; 
     
@@ -40,7 +42,8 @@ public class DialogueBoxLayer extends JPanel {
     private JTextArea txtDialogue;
     private JLabel speakerLabel;
 
-    public DialogueBoxLayer() {
+    public DialogueBoxLayer(MainFrame mainFrame) {
+        this.mainFrame = mainFrame;
         setLayout(null);
         setOpaque(false);
         setPreferredSize(new Dimension(1280, 720));
@@ -60,7 +63,7 @@ public class DialogueBoxLayer extends JPanel {
         speakerLabel = new JLabel();
         speakerLabel.setForeground(SPEAKER_COLOR);
         speakerLabel.setFont(speakerFont);
-        speakerLabel.setBounds(SPEAKER_X, SPEAKER_Y - 25, 400, 30); // Adjust Y to position properly
+        speakerLabel.setBounds(SPEAKER_X, SPEAKER_Y - 25, 400, 30);
         speakerLabel.setOpaque(false);
         add(speakerLabel);
         
@@ -113,7 +116,7 @@ public class DialogueBoxLayer extends JPanel {
     
     public void setDialogue(String text) {
         if (text == null) text = "";
-        this.fullText = text;
+        this.fullText = formatDialogue(text);
         this.charIndex = 0;
 
         if (typewriterTimer != null && typewriterTimer.isRunning()) {
@@ -136,7 +139,7 @@ public class DialogueBoxLayer extends JPanel {
 
     public void setDialogueInstant(String text) {
         if (text == null) text = "";
-        this.fullText = text;
+        this.fullText = formatDialogue(text);
         this.charIndex = fullText.length();
         
         if (typewriterTimer != null && typewriterTimer.isRunning()) {
@@ -144,6 +147,45 @@ public class DialogueBoxLayer extends JPanel {
         }
         
         txtDialogue.setText(fullText);
+    }
+
+    public String formatDialogue(String text) {
+        if (mainFrame == null) {
+            return text;
+        }
+        
+        try {
+            String playerName = mainFrame.getPlayerName();
+            String playerGender = mainFrame.getPlayerGender();
+            String playerPronoun = mainFrame.getPlayerPronoun();
+            
+            if (playerName == null || playerName.isEmpty()) {
+                return text;
+            }
+            
+            String formatted = text;
+            
+            formatted = formatted.replace("{name}", playerName);
+            
+            if (playerPronoun != null && !playerPronoun.isEmpty()) {
+                String[] pronouns = playerPronoun.split("/");
+                String subject = pronouns.length > 0 ? pronouns[0] : "they";
+                String object = pronouns.length > 1 ? pronouns[1] : "them";
+                
+                formatted = formatted.replace("{pronoun_subject}", subject);
+                formatted = formatted.replace("{pronoun_object}", object);
+            }
+            
+            if (playerGender != null) {
+                String possessive = playerGender.equals("FEMALE") ? "her" : "his";
+                formatted = formatted.replace("{pronoun_possessive}", possessive);
+            }
+            
+            return formatted;
+        } catch (Exception e) {
+            System.err.println("Error formatting dialogue: " + e.getMessage());
+            return text;
+        }
     }
 
     public void skipAnimation() {
