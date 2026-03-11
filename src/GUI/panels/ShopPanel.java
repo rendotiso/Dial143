@@ -4,19 +4,72 @@
  */
 package GUI.panels;
 
-/**
- *
- * @author renmaya
- */
-public class ShopPanel extends javax.swing.JPanel {
+import GUI.panels.dialogueComponents.BackgroundLayer;
+import GUI.panels.dialogueComponents.TopBarComponents;
+import GUI.panels.shopComponents.*;
+import java.awt.Dimension;
+import javax.swing.JPanel;
+import javax.swing.OverlayLayout;
 
-    /**
-     * Creates new form ShopPanel
-     */
-    public ShopPanel() {
-        initComponents();
+public class ShopPanel extends JPanel {
+    
+    private final MainFrame mainPanel;
+    private BackgroundLayer bg;
+    private TopBarComponents topBar;
+    private SettingsPanel settings;
+    private ShopLayer shopBox;
+
+    public ShopPanel(MainFrame mainPanel, SettingsPanel sharedSettings) {
+        this.mainPanel = mainPanel;  
+        this.settings = sharedSettings;
+        
+        setPreferredSize(new Dimension(1280, 720));
+        setLayout(new OverlayLayout(this));
+        initializeLayers();
     }
+    
+    private void initializeLayers() {
+        bg = new BackgroundLayer();
+        bg.setBackgroundFromFile("placeholderBG4.jpg");
 
+        topBar = new TopBarComponents(mainPanel);
+        topBar.setSettingsPanel(settings); 
+        topBar.setParentScreen("shift");
+        
+       InventoryPanel inventory = new InventoryPanel(mainPanel);
+        topBar.setInventoryPanel(inventory);
+    
+        shopBox = new ShopLayer();
+    
+        add(topBar);
+        add(shopBox);
+        add(bg);
+    
+    }
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
     /**
      * This method is called from within the constructor to initialize the form.
      * WARNING: Do NOT modify this code. The content of this method is always

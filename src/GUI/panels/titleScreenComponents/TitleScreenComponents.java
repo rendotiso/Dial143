@@ -38,7 +38,7 @@ public class TitleScreenComponents extends JPanel {
         titleLabel.setBounds(58, 78, 294, 216);
         add(titleLabel);
 
-        btnPlay = new JButton("Play");
+        btnPlay = new JButton("New Game");
         btnPlay.setBounds(88, 444, 236, 30);
         btnPlay.addActionListener(e -> { if (onPlay != null) onPlay.run(); });
         btnPlay.setFocusable(false);

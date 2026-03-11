@@ -17,6 +17,7 @@ public class CallDialogueBoxLayer extends JPanel {
     private int[]    testSalary          = {};
     // Hardcoded test fields (replace with CallScene later)
     
+    private java.util.function.BiConsumer<Integer, Integer> onPointsAwarded;
     
     private int     timerMax     = 10;
     private int     timerLeft    = 10;
@@ -148,6 +149,11 @@ public class CallDialogueBoxLayer extends JPanel {
         timerPaused = false;
     }
 
+    public void onPointsAwarded(java.util.function.BiConsumer<Integer, Integer> callback) {
+    this.onPointsAwarded = callback;
+}
+
+    
     private void selectChoice(int index) {
         if (chosenIndex != -1) return;
         if (countdownTimer != null) countdownTimer.stop();
@@ -155,10 +161,14 @@ public class CallDialogueBoxLayer extends JPanel {
         timerPaused = false;
         chosenIndex  = index;
 
+           if (onPointsAwarded != null) {
+            onPointsAwarded.accept(testPP[index], testSalary[index]);
+        }
+            
         //HARD CODED TEST RESPONSE
         fullResponse = "You: " + testPlayerResponses[index]
                      + "\n\n" + callerName + ": " + testCallerResponses[index]
-                     + "\n\n+PP: " + testPP[index]
+                     + "\n\n+Performance Points: " + testPP[index]
                      + "   +Salary: ₱" + testSalary[index];
         //HARD TEST RESPONSE
         

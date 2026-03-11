@@ -14,8 +14,28 @@ public class MainFrame extends javax.swing.JFrame {
     
     private TitleScreenPanel titlePanel;
     private InteractionPanel dialoguePanel;
-    private SettingsPanel settingsPanel; // This is for popup ONLY - NOT added to CardLayout
+    private SettingsPanel settingsPanel; 
     private ShiftPanel shiftPanel;
+  
+    private int sharedPP     = 0;
+    private int sharedLP     = 0;
+    private int sharedSalary = 0;
+    private boolean statsInitialized = false;
+
+    public int  getPP()     { return sharedPP; }
+    public int  getLP()     { return sharedLP; }
+    public int  getSalary() { return sharedSalary; }
+
+    public void setPP(int v)     { sharedPP     = v; }
+    public void setLP(int v)     { sharedLP     = v; }
+    public void setSalary(int v) { sharedSalary = v; }
+
+    public void resetStats() {
+        sharedPP     = 0;
+        sharedLP     = 0;
+        sharedSalary = 0;
+    }
+
     
     private String currentScreen = "title";
     

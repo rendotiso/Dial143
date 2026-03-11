@@ -10,6 +10,7 @@ package GUI.panels;
 
 import GUI.panels.shiftComponents.CallDialogueBoxLayer;
 import GUI.panels.dialogueComponents.*;
+import GUI.panels.inventoryComponents.*;
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.*;
@@ -38,6 +39,9 @@ public class ShiftPanel extends JPanel {
         topBar = new TopBarComponents(mainPanel);
         topBar.setSettingsPanel(settings); 
         topBar.setParentScreen("shift");
+        
+        InventoryPanel inventory = new InventoryPanel(mainPanel);
+        topBar.setInventoryPanel(inventory);
 
 
         callBox = new CallDialogueBoxLayer();
@@ -47,19 +51,33 @@ public class ShiftPanel extends JPanel {
         });
 
     topBar.onSettingsClosed(() -> {
+            saveStats();
         callBox.resumeTimer();
+    });
+    
+    callBox.onPointsAwarded((pp, salary) -> {
+        topBar.addPpPoints(pp);
+        topBar.addSalaryPoints(salary);
     });
 
         add(topBar);
         add(callBox);
         add(bg);
     }
-
+    
+    private void saveStats() {
+        mainPanel.setPP(topBar.getCurrentPpValue());
+        mainPanel.setLP(topBar.getCurrentLpValue());
+        mainPanel.setSalary(topBar.getCurrentSalaryValue());
+    }   
+    
     public void loadTestCall() {
+        topBar.setPpValue(mainPanel.getPP());
+        topBar.setLpValue(mainPanel.getLP());
+        topBar.setSalaryValue(mainPanel.getSalary());
         callBox.loadTest();
     }
     
-    // These methods delegate to callBox
     public void pauseTimer() {
         callBox.pauseTimer();
     }
@@ -72,10 +90,6 @@ public class ShiftPanel extends JPanel {
         return callBox.isTimerPaused();
     }
 
-    public void setBackground(String filename) {
-        bg.setBackgroundFromFile(filename);
-    }
-    
     @SuppressWarnings("unchecked")
     // <editor-fold defaultstate="collapsed" desc="Generated Code">//GEN-BEGIN:initComponents
     private void initComponents() {

@@ -11,7 +11,7 @@ public class SettingsPanel extends javax.swing.JPanel {
     private JDialog dialog;
     private String previousScreen = "shift";
     private WindowListener currentListener;
-    private boolean isHiding = false; // Flag to prevent recursive hiding/showing
+    private boolean isHiding = false; 
     
     public SettingsPanel(MainFrame mainFrame) {
         this.mainFrame = mainFrame;
@@ -23,31 +23,25 @@ public class SettingsPanel extends javax.swing.JPanel {
     }
     
     public void showAsPopup(WindowListener listener) {
-        // Don't show if we're in the process of hiding
         if (isHiding) {
             return;
         }
         
-        // Store the listener
         this.currentListener = listener;
         
-        // Always create a new dialog to avoid reuse issues
         if (dialog != null && dialog.isVisible()) {
             dialog.dispose();
         }
         
-        // Create new dialog
         dialog = new JDialog(mainFrame, "Settings", Dialog.ModalityType.APPLICATION_MODAL);
         dialog.setUndecorated(true);
         dialog.setSize(300, 350);
         dialog.setContentPane(this);
         
-        // Add the provided window listener
         if (listener != null) {
             dialog.addWindowListener(listener);
         }
         
-        // Add key listener for ESC key
         dialog.addKeyListener(new KeyAdapter() {
             @Override
             public void keyPressed(KeyEvent e) {
@@ -61,11 +55,9 @@ public class SettingsPanel extends javax.swing.JPanel {
         dialog.setLocationRelativeTo(mainFrame);
         dialog.setAlwaysOnTop(true);
         
-        // Add a window focus listener to detect when dialog is closing
         dialog.addWindowListener(new WindowAdapter() {
             @Override
             public void windowClosed(WindowEvent e) {
-                // Reset the hiding flag when dialog is fully closed
                 isHiding = false;
             }
         });

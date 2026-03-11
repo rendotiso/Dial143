@@ -10,6 +10,7 @@ import GUI.panels.MainFrame;
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.*;
+import GUI.panels.inventoryComponents.ItemLayer;
 
 public class InteractionPanel extends javax.swing.JPanel {
     private MainFrame mainPanel;
@@ -19,6 +20,8 @@ public class InteractionPanel extends javax.swing.JPanel {
     private TopBarComponents uiComponents;
     private ChoiceButtonLayer choices;
     private SettingsPanel settings; // Keep this
+
+
 
     private int currentScene = 0;
 
@@ -35,9 +38,12 @@ public class InteractionPanel extends javax.swing.JPanel {
         sprite = new SpriteLayer();
         dialogueBox = new DialogueBoxLayer();
 
-    uiComponents = new TopBarComponents(mainPanel);
-    uiComponents.setSettingsPanel(settings); // This line is crucial!
-    uiComponents.setParentScreen("dialogue");
+            uiComponents = new TopBarComponents(mainPanel);
+            uiComponents.setSettingsPanel(settings); // This line is crucial!
+            uiComponents.setParentScreen("dialogue");
+
+        InventoryPanel inventory = new InventoryPanel(mainPanel);
+        uiComponents.setInventoryPanel(inventory);
 
         // Optional: Add callbacks if you need to pause anything
         uiComponents.onSettingsOpening(() -> {
@@ -71,6 +77,12 @@ public class InteractionPanel extends javax.swing.JPanel {
             }
         }.execute();
     }
+    
+    private void saveStats() {
+    mainPanel.setPP(uiComponents.getCurrentPpValue());
+    mainPanel.setLP(uiComponents.getCurrentLpValue());
+    mainPanel.setSalary(uiComponents.getCurrentSalaryValue());
+}
     
     //DELETE ONCE WITH STORY
 private String[][] scenes = {
@@ -109,11 +121,14 @@ private String[][] scenes = {
    
 };
         
-        public void loadTestContent() {
-            bg.setBackgroundColor(new Color(20, 30, 40));
-            currentScene = 0;
-            loadScene(currentScene);
-        }
+    public void loadTestContent() {
+        uiComponents.setPpValue(mainPanel.getPP());
+        uiComponents.setLpValue(mainPanel.getLP());
+        uiComponents.setSalaryValue(mainPanel.getSalary());
+        bg.setBackgroundColor(new Color(20, 30, 40));
+        currentScene = 0;
+        loadScene(currentScene);
+    }
 
     private void loadScene(int sceneIndex) {
      if (sceneIndex < scenes.length) {
@@ -174,15 +189,16 @@ private String[][] scenes = {
 
         choices.showChoices();
     }
-
+    
     private void advanceScene() {
-        if (currentScene + 1 < scenes.length) {
-            currentScene++;
-            loadScene(currentScene);
-        } else {
-            mainPanel.showScreen("shift");
-        }
+    if (currentScene + 1 < scenes.length) {
+        currentScene++;
+        loadScene(currentScene);
+    } else {
+        saveStats();
+        mainPanel.showScreen("shift");
     }
+}
     
     private void onChoiceSelected(String choiceText,String nextNode){
 

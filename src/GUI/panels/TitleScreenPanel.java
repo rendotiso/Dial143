@@ -26,7 +26,7 @@ public class TitleScreenPanel extends javax.swing.JPanel  {
             bg.setBackgroundFromFile("placeholderBG.jpg");
 
             buttons = new TitleScreenComponents();
-            buttons.setPlayAction(() -> mainPanel.showScreen("dialogue"));
+            buttons.setPlayAction(() -> {mainPanel.resetStats(); mainPanel.showScreen("dialogue");}); 
             buttons.setSaveAction(() -> { /* TODO */ });
             buttons.setExitAction(() -> System.exit(0));
 
