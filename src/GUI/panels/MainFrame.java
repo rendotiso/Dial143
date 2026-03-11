@@ -9,29 +9,33 @@ import javax.swing.JPanel;
 
 public class MainFrame extends javax.swing.JFrame {
     
-    // CODE HERE
-    private static final java.util.logging.Logger logger = java.util.logging.Logger.getLogger(MainFrame.class.getName());
-
     private CardLayout cardLayout;
     private JPanel mainContainer;
     
-   
+    private TitleScreenPanel titlePanel;
+    private InteractionPanel dialoguePanel;
+    private SettingsPanel settingsPanel; // This is for popup ONLY - NOT added to CardLayout
+    private ShiftPanel shiftPanel;
+    
+    private String currentScreen = "title";
+    
     public MainFrame() {
         initComponents();
         this.setLocationRelativeTo(null);
         panelObjects();
-
-        // Show title screen first
         this.setContentPane(mainContainer);
         cardLayout.show(mainContainer, "title");
     }
     
     public void showScreen(String screenName) {
+        currentScreen = screenName;
         cardLayout.show(mainContainer, screenName);
         
-         if (screenName.equals("dialogue")) {
-            InteractionPanel dp = (InteractionPanel) mainContainer.getComponent(1); // or however you access it
-            dp.loadTestContent();
+        if (screenName.equals("dialogue") && dialoguePanel != null) {
+            dialoguePanel.loadTestContent();
+        }
+        if (screenName.equals("shift") && shiftPanel != null) {
+            shiftPanel.loadTestCall();
         }
     }
     
@@ -39,26 +43,33 @@ public class MainFrame extends javax.swing.JFrame {
         cardLayout = new CardLayout();
         mainContainer = new JPanel(cardLayout);
         
-        TitleScreenPanel titlePanel = new TitleScreenPanel(this); 
-        InteractionPanel dialoguePanel = new InteractionPanel(this);
-        SettingsPanel settingsPanel = new SettingsPanel(this);    
+        titlePanel = new TitleScreenPanel(this);
         
-//        SavePanel savePanel = new SavePanel(this);
-//        ShiftPanel shiftPanel = new shiftPanel(this);
-//        InventoryPanel inventoryPanel = new InventoryPanel(this);
-//        ShopPanel shopPanel = new ShopPanel(this);
-              
+        // Create ONE SettingsPanel instance to be shared for popups
+        // This is NOT added to the CardLayout container
+        settingsPanel = new SettingsPanel(this);
+        
+        // Pass the SAME settingsPanel instance to both panels
+        dialoguePanel = new InteractionPanel(this, settingsPanel);
+        shiftPanel = new ShiftPanel(this, settingsPanel);
         
         mainContainer.add(titlePanel, "title");
         mainContainer.add(dialoguePanel, "dialogue");
-        mainContainer.add(settingsPanel, "settings");
-        
-//        mainContainer.add(shiftPanel, "shift");
-//        mainContainer.add(shopPanel, "shop");
-//        mainContainer.add(inventoryPanel, "inventory");
-//        mainContainer.add(savePanel, "save");
-        
+        // DO NOT ADD settingsPanel to the CardLayout - it's only for popups!
+        // mainContainer.add(settingsPanel, "settings"); // REMOVE THIS LINE
+        mainContainer.add(shiftPanel, "shift");
     }
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
     
     
     

@@ -36,6 +36,7 @@ public class SpriteLayer extends JPanel {
     private final int SPRITE_WIDTH = 386;
     private final int SPRITE_HEIGHT = 648;
     private final int SPRITE_Y = 80; 
+    
     public SpriteLayer() {
         setBounds(0, 0, 1280, 720);
         setPreferredSize(new Dimension(1280, 720));

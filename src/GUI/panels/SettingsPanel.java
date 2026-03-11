@@ -3,35 +3,95 @@ package GUI.panels;
 import GUI.panels.MainFrame;
 import javax.swing.*;
 import java.awt.*;
+import java.awt.event.*;
 
 public class SettingsPanel extends javax.swing.JPanel {
     
     private MainFrame mainFrame;
     private JDialog dialog;
+    private String previousScreen = "shift";
+    private WindowListener currentListener;
+    private boolean isHiding = false; // Flag to prevent recursive hiding/showing
     
     public SettingsPanel(MainFrame mainFrame) {
         this.mainFrame = mainFrame;
         initComponents();
     }
     
-    public void showAsPopup() {
-        if (dialog == null) {
-            dialog = new JDialog(mainFrame, "Settings", Dialog.ModalityType.APPLICATION_MODAL);
-            dialog.setUndecorated(true);
-            dialog.setSize(300, 350);
-            dialog.setContentPane(this);
+    public void setPreviousScreen(String screen) {
+        this.previousScreen = screen;
+    }
+    
+    public void showAsPopup(WindowListener listener) {
+        // Don't show if we're in the process of hiding
+        if (isHiding) {
+            return;
         }
         
+        // Store the listener
+        this.currentListener = listener;
+        
+        // Always create a new dialog to avoid reuse issues
+        if (dialog != null && dialog.isVisible()) {
+            dialog.dispose();
+        }
+        
+        // Create new dialog
+        dialog = new JDialog(mainFrame, "Settings", Dialog.ModalityType.APPLICATION_MODAL);
+        dialog.setUndecorated(true);
+        dialog.setSize(300, 350);
+        dialog.setContentPane(this);
+        
+        // Add the provided window listener
+        if (listener != null) {
+            dialog.addWindowListener(listener);
+        }
+        
+        // Add key listener for ESC key
+        dialog.addKeyListener(new KeyAdapter() {
+            @Override
+            public void keyPressed(KeyEvent e) {
+                if (e.getKeyCode() == KeyEvent.VK_ESCAPE) {
+                    hidePopup();
+                }
+            }
+        });
+        
+        dialog.setFocusable(true);
         dialog.setLocationRelativeTo(mainFrame);
         dialog.setAlwaysOnTop(true);
+        
+        // Add a window focus listener to detect when dialog is closing
+        dialog.addWindowListener(new WindowAdapter() {
+            @Override
+            public void windowClosed(WindowEvent e) {
+                // Reset the hiding flag when dialog is fully closed
+                isHiding = false;
+            }
+        });
+        
         dialog.setVisible(true);
     }
     
     public void hidePopup() {
         if (dialog != null && dialog.isVisible()) {
+            // Remove the window listener to prevent multiple triggers
+            if (currentListener != null) {
+                dialog.removeWindowListener(currentListener);
+            }
             dialog.dispose();
+            dialog = null;
         }
+     }
+    
+    public void showAsPopup() {
+        showAsPopup(null);
     }
+    
+    
+    
+    
+    
     
     
     

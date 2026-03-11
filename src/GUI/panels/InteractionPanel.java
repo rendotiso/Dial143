@@ -9,37 +9,46 @@ import GUI.panels.dialogueComponents.*;
 import GUI.panels.MainFrame;
 import javax.swing.*;
 import java.awt.*;
+import java.awt.event.*;
 
 public class InteractionPanel extends javax.swing.JPanel {
-
     private MainFrame mainPanel;
-    private SettingsPanel settings;
-
-    // Layer components
     private BackgroundLayer bg;
     private SpriteLayer sprite;
     private DialogueBoxLayer dialogueBox;
     private TopBarComponents uiComponents;
     private ChoiceButtonLayer choices;
+    private SettingsPanel settings; // Keep this
 
     private int currentScene = 0;
 
-
-    public InteractionPanel(MainFrame mainPanel) {
-
+    public InteractionPanel(MainFrame mainPanel, SettingsPanel sharedSettings) { // Add parameter
         this.mainPanel = mainPanel;
-        this.settings = new SettingsPanel(mainPanel);
-
+        this.settings = sharedSettings; // Use shared settings
+        
         initComponents();
         initializeLayers();
     }
 
     private void initializeLayers() {
-
         bg = new BackgroundLayer();
         sprite = new SpriteLayer();
         dialogueBox = new DialogueBoxLayer();
-        uiComponents = new TopBarComponents();
+
+    uiComponents = new TopBarComponents(mainPanel);
+    uiComponents.setSettingsPanel(settings); // This line is crucial!
+    uiComponents.setParentScreen("dialogue");
+
+        // Optional: Add callbacks if you need to pause anything
+        uiComponents.onSettingsOpening(() -> {
+            // Pause any ongoing animations if needed
+        });
+
+        uiComponents.onSettingsClosed(() -> {
+            // Resume any paused animations
+            requestFocusInWindow();
+        });
+
         choices = new ChoiceButtonLayer();
 
         add(choices);
@@ -49,13 +58,14 @@ public class InteractionPanel extends javax.swing.JPanel {
         add(bg);
 
         choices.setChoiceListener((text, node) -> onChoiceSelected(text, node));
-        uiComponents.setSettingsButtonAction(settings);
         
          new SwingWorker<Void, Void>() {
             @Override
             protected Void doInBackground() {
                 sprite.addSprite("Chiaki", "placeholderSprite.png");
                 sprite.addSprite("Rando", "placeholderSprite2.png");
+                sprite.addSprite("Homosexual", "placeholderSprite3.png");
+                sprite.addSprite("Broke ahh", "placeholderSprite4.png");
                 bg.preload("placeholderBG.jpg", "placeholderBG2.jpg");
                 return null;
             }
@@ -63,67 +73,96 @@ public class InteractionPanel extends javax.swing.JPanel {
     }
     
     //DELETE ONCE WITH STORY
-    private String[][] scenes = {
-
-        {"Chiaki", "Hi there! Welcome to the dating sim!", "Chiaki", "placeholderBG.jpg"},
-        {"Chiaki", "I'm so glad you decided to talk to me today.", "Chiaki", "placeholderBG.jpg"},
-        {"Chiaki", "Would you like to hang out sometime?", "Chiaki", "placeholderBG2.jpg"},
-        {"Rando", "Oh, hey! I didn't see you there!", "Rando", "placeholderBG.jpg"},
-        {"Rando", "I've been wanting to ask you something...", "Rando", "placeholderBG.jpg"},
-        {"Chiaki", "We have class together, right?", "Chiaki", "placeholderBG2.jpg"},
-        {"Rando", "The beach is beautiful today!", "Rando", "placeholderBG2.jpg"}
-
-    };
+private String[][] scenes = {
+    // Single sprite
+    {"Chiaki", "Hi there! Welcome to the dating sim!", "single:Chiaki", "placeholderBG.jpg"},
+    // No sprite
+    {"Narrator", "The room falls silent...", "none", "placeholderBG.jpg"},
+    // Two sprites
+    {"Chiaki", "Would you like to hang out sometime?", "two:Chiaki:Rando", "placeholderBG2.jpg"},
+    // No sprite
+    {"Narrator", "An awkward silence fills the air.", "none", "placeholderBG2.jpg"},
+    // Single sprite, different character
+    {"Rando", "Oh, hey! I didn't see you there!", "single:Rando", "placeholderBG.jpg"},
+    // Two sprites again
+    {"Chiaki", "We have class together, right?", "two:Rando:Chiaki", "placeholderBG2.jpg"},
+    
+    {"Rando", "Yes, we do!","two:Rando:Chiaki", "placeholderBG2.jpg"},
+    // No sprite
+    {"Narrator", "The beach stretches out endlessly.", "none", "placeholderBG2.jpg"},
+    // Single sprite
+    {"Rando", "The beach is beautiful today!", "single:Rando", "placeholderBG2.jpg"},
+    
+    {"Homosexual", "I like men", "triple:Homosexual:Rando:Chiaki","placeholderBG2.jpg"},
+    
+    {"Broke ahh", "Dawg you spitting fax frfr", "quadruple:Homosexual:Broke ahh:Rando:Chiaki", "placeholderBG2.jpg"},
+    
+    {"Narrator", "what the fuck did I just witness. What kind of testing is this. Are you crazy? Crazy? I was crazy once. "
+        + "They locked me in a room. A rubber room. A rubber room with rats. And rats make me crazy." +  "Are you crazy? Crazy? I was crazy once. "
+        + "They locked me in a room. A rubber room. A rubber room with rats. And rats make me crazy."+  "Are you crazy? Crazy? I was crazy once. "
+        + "They locked me in a room. A rubber room. A rubber room with rats. And rats make me crazy."+  "Are you crazy? Crazy? I was crazy once. "
+        + "They locked me in a room. A rubber room. A rubber room with rats. And rats make me crazy."+  "Are you crazy? Crazy? I was crazy once. "
+        + "They locked me in a room. A rubber room. A rubber room with rats. And rats make me crazy."+  "Are you crazy? Crazy? I was crazy once. "
+        + "They locked me in a room. A rubber room. A rubber room with rats. And rats make me crazy."+  "Are you crazy? Crazy? I was crazy once. "
+        + "They locked me in a room. A rubber room. A rubber room with rats. And rats make me crazy."+  "Are you crazy? Crazy? I was crazy once. "
+        + "They locked me in a room. A rubber room. A rubber room with rats. And rats make me crazy.", "none", "placeholderBG2.jpg"}
+   
+};
         
         public void loadTestContent() {
             bg.setBackgroundColor(new Color(20, 30, 40));
             currentScene = 0;
             loadScene(currentScene);
-            uiComponents.setPpValue(50);
-            uiComponents.setLpValue(0);
         }
 
     private void loadScene(int sceneIndex) {
+     if (sceneIndex < scenes.length) {
+         String[] scene = scenes[sceneIndex];
 
-        if(sceneIndex < scenes.length){
+         String speaker = scene[0];
+         String text = scene[1];
+         String spriteSpec = scene[2];
+         String backgroundName = scene[3];
 
-            String[] scene = scenes[sceneIndex];
+         if (backgroundName != null && !backgroundName.isEmpty()) {
+             bg.setBackgroundFromFile(backgroundName);
+         } else {
+             bg.setBackgroundColor(new Color(20, 30, 40));
+         }
 
-            String speaker = scene[0];
-            String text = scene[1];
-            String spriteName = scene[2];
-            String backgroundName = scene[3];
+         dialogueBox.setSpeaker(speaker);
+         dialogueBox.setDialogue(text);
 
-            if(backgroundName != null && !backgroundName.isEmpty()){
+         // Parse sprite spec
+         if (spriteSpec.equals("none")) {
+             sprite.hideAllSprites();
+         } else if (spriteSpec.startsWith("two:")) {
+             String[] parts = spriteSpec.split(":");
+             sprite.showTwoSprites(parts[1], parts[2]);
+         } else if (spriteSpec.startsWith("single:")) {
+             String[] parts = spriteSpec.split(":");
+             sprite.showSingleSprite(parts[1]);
+          } else if (spriteSpec.startsWith("triple:")) {
+               String[] parts = spriteSpec.split(":");
+               sprite.showThreeSprites(parts[1], parts[2], parts[3]);
+           } else if (spriteSpec.startsWith("quadruple:")) {
+               String[] parts = spriteSpec.split(":");
+               sprite.showFourSprites(parts[1], parts[2], parts[3], parts[4]);
+           }else {
+             // fallback: treat as single character name
+             sprite.showSingleSprite(spriteSpec);
+         }
 
-                bg.setBackgroundFromFile(backgroundName);
+         if (sceneIndex == 2) {
+             showChoicesAtScene2();
+         } else {
+             choices.hideChoices();
+         }
 
-            } else {
-
-                bg.setBackgroundColor(new Color(20,30,40));
-
-            }
-
-            dialogueBox.setSpeaker(speaker);
-            dialogueBox.setDialogue(text);
-
-            sprite.showCharacter(spriteName);
-
-            if(sceneIndex == 2){
-
-                showChoicesAtScene2();
-
-            }else{
-
-                choices.hideChoices();
-
-            }
-
-            revalidate();
-            repaint();
-
-        }
-    }
+         revalidate();
+         repaint();
+     }
+ }
 
     private void showChoicesAtScene2(){
 
@@ -140,6 +179,8 @@ public class InteractionPanel extends javax.swing.JPanel {
         if (currentScene + 1 < scenes.length) {
             currentScene++;
             loadScene(currentScene);
+        } else {
+            mainPanel.showScreen("shift");
         }
     }
     

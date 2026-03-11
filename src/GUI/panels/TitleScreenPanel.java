@@ -32,7 +32,7 @@ public class TitleScreenPanel extends javax.swing.JPanel  {
 
             add(buttons);
             add(bg);
-        }
+   }
     
        
      // BELOW IS THE CODE GENERATURED FROM NETBEANS
