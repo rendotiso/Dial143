@@ -82,26 +82,22 @@ public class CallDialogueBoxLayer extends JPanel {
     // ── Load next call ────────────────────────────────────────────────────────
 
     public void loadTest() {
-        // Stop all timers first
         stopAll();
         
-        // Cancel any pending delay timer
         if (delayTimer != null && delayTimer.isRunning()) {
             delayTimer.stop();
             delayTimer = null;
         }
 
-        // ── Guard: pool empty — ShiftPanel's onCallComplete handles routing ──
         if (remainingCalls.isEmpty()) {
             if (onCallComplete != null) {
-                // Use SwingUtilities to ensure this runs on EDT
                 SwingUtilities.invokeLater(() -> onCallComplete.run());
             }
             return;
         }
 
         int callIndex = remainingCalls.remove(0);
-        callNumber    = totalCalls - remainingCalls.size(); // 1-based
+        callNumber    = totalCalls - remainingCalls.size();
 
         // ── Call data ─────────────────────────────────────────────────────────
         String[] callerNames = {"Sarah", "Miguel", "Jenny", "Mr. Santos", "Anna"};

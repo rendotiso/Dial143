@@ -219,7 +219,7 @@ public class InventoryPanel extends JPanel {
     private void openDetail(Items item) {
         detailPanel.setItem(item);
         detailPanel.onItemUsed(this::refreshGrid);
-        detailPanel.showAsPopup(owner); // also APPLICATION_MODAL — blocks
+        detailPanel.showAsPopup(owner); 
         refreshGrid();
     }
 

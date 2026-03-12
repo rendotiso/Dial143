@@ -3,23 +3,11 @@ package Main;
 import GUI.panels.MainFrame;
 import java.awt.EventQueue;
 
-/*
- * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
- * Click nbfs://nbhost/SystemFileSystem/Templates/Classes/Class.java to edit this template
- */
-
 public class Main {
-    
-    public static void main(String args[]) {
-        
-        EventQueue.invokeLater(new Runnable() {
-            public void run() {
-                MainFrame frame = new MainFrame();
-                frame.pack();
-                frame.setLocationRelativeTo(null); // wont work, need fixes
-                frame.setVisible(true);
-            }
+    public static void main(String[] args) {
+        EventQueue.invokeLater(() -> {
+            MainFrame frame = new MainFrame();
+            frame.setVisible(true);
         });
     }
-    
 }

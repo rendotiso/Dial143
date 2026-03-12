@@ -23,9 +23,10 @@ public class TitleScreenPanel extends javax.swing.JPanel  {
     private void initializeLayers() {
         
             bg = new BackgroundLayer();
-            bg.setBackgroundFromFile("placeholderBG.jpg");
+            bg.setBackgroundFromFile("TitleBackground.jpg");
 
             buttons = new TitleScreenComponents();
+            buttons.setTitleImage("gameTitle.png");
             buttons.setPlayAction(() -> {mainPanel.resetStats(); mainPanel.showScreen("dialogue");}); 
             buttons.setSaveAction(() -> { 
             

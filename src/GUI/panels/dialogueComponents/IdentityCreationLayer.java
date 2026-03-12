@@ -15,13 +15,13 @@ public class IdentityCreationLayer extends JPanel {
     private Runnable onComplete;
 
     private String playerName   = "";
-    private String playerGender = ""; 
+    private String playerGender = "";
 
-    private static final String SPRITE_MALE   = "/GUI/resources/icons/maleAvatar.PNG";
-    private static final String SPRITE_FEMALE = "/GUI/resources/icons/femaleAvatar.PNG";
+    private static final String SPRITE_MALE    = "/GUI/resources/icons/maleAvatar.PNG";
+    private static final String SPRITE_FEMALE  = "/GUI/resources/icons/femaleAvatar.PNG";
     private static final String SPRITE_DEFAULT = "/GUI/resources/icons/defaultAvatar.PNG";
-    private static final int    AVATAR_W      = 200;
-    private static final int    AVATAR_H      = 200;
+    private static final int    AVATAR_W       = 200;
+    private static final int    AVATAR_H       = 200;
 
     private JTextField nameField;
     private JLabel     avatarLabel;
@@ -29,18 +29,15 @@ public class IdentityCreationLayer extends JPanel {
     private JButton    maleBtn;
     private JButton    femaleBtn;
     private JButton    confirmBtn;
-    private JLabel     warningLabel;
 
     private static final Color CARD_BG      = new Color(250, 248, 243);
     private static final Color CARD_BORDER  = new Color(30,  30,  30);
     private static final Color HEADER_BG    = new Color(15,  30,  60);
-    private static final Color HEADER_TEXT  = new Color(220, 195, 120);
+    private static final Color HEADER_TEXT  = Color.WHITE;               
     private static final Color LABEL_COLOR  = new Color(50,  50,  60);
     private static final Color MALE_BASE    = new Color(190, 215, 245);
     private static final Color FEMALE_BASE  = new Color(245, 200, 215);
     private static final Color SELECTED_HL  = new Color(80,  180, 110);
-    private static final Color WARNING_NORM = new Color(200, 170,  80);
-    private static final Color WARNING_ERR  = new Color(220,  60,  60);
 
     private final String idNumber = "CC-" + (1000 + (int)(Math.random() * 9000));
 
@@ -63,7 +60,7 @@ public class IdentityCreationLayer extends JPanel {
 
     // ── Public API ────────────────────────────────────────────────────────────
 
-    public void setOnComplete(Runnable callback) {
+       public void setOnComplete(Runnable callback) {
         this.onComplete = callback;
     }
 
@@ -99,10 +96,6 @@ public class IdentityCreationLayer extends JPanel {
         playerGender = "";
         if (nameField    != null) nameField.setText("");
         if (avatarLabel  != null) avatarLabel.setIcon(iconDefault); 
-        if (warningLabel != null) {
-            warningLabel.setForeground(WARNING_NORM);
-            warningLabel.setText("\u26A0  All changes are final once confirmed.");
-        }
         if (maleBtn   != null) maleBtn.repaint();
         if (femaleBtn != null) femaleBtn.repaint();
     }
@@ -221,10 +214,9 @@ public class IdentityCreationLayer extends JPanel {
                 g2.dispose();
             }
         };
-        
-        card.setOpaque(false);
-
-        // ── NORTH: company header ─────────────────────────────────────────────
+    card.setOpaque(false);
+    
+        // NORTH: header
         JPanel headerPanel = new JPanel(new GridBagLayout());
         headerPanel.setOpaque(false);
         headerPanel.setPreferredSize(new Dimension(0, 56));
@@ -234,18 +226,16 @@ public class IdentityCreationLayer extends JPanel {
         headerPanel.add(company);
         card.add(headerPanel, BorderLayout.NORTH);
 
-        // ── CENTER: avatar left, fields right ────────────────────────────────
+        // CENTER: avatar + fields
         JPanel centerPanel = new JPanel(new GridBagLayout());
         centerPanel.setOpaque(false);
         centerPanel.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 24));
 
         GridBagConstraints gc = new GridBagConstraints();
 
-        // Avatar box
         JPanel avatarBox = new JPanel(new GridBagLayout()) {
             @Override protected void paintComponent(Graphics g) {
                 Graphics2D g2 = (Graphics2D) g.create();
-                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
                 g2.setColor(new Color(220, 215, 205));
                 g2.fillRect(0, 0, getWidth(), getHeight());
                 g2.setColor(new Color(155, 150, 140));
@@ -258,36 +248,28 @@ public class IdentityCreationLayer extends JPanel {
         avatarBox.setPreferredSize(new Dimension(AVATAR_W, AVATAR_H));
         avatarBox.setMinimumSize(new Dimension(AVATAR_W, AVATAR_H));
         avatarBox.setMaximumSize(new Dimension(AVATAR_W, AVATAR_H));
-
         avatarLabel = new JLabel(iconDefault, SwingConstants.CENTER);
         avatarLabel.setVerticalAlignment(SwingConstants.CENTER);
         avatarBox.add(avatarLabel);
 
-        gc.gridx = 0; gc.gridy = 0;
-        gc.gridheight = 4;
+        gc.gridx = 0; gc.gridy = 0; gc.gridheight = 4;
         gc.anchor = GridBagConstraints.CENTER;
         gc.fill   = GridBagConstraints.NONE;
         gc.insets = new Insets(0, 0, 0, 24);
         centerPanel.add(avatarBox, gc);
 
-        // Right column
-        gc.gridheight = 1;
-        gc.gridx      = 1;
-        gc.fill       = GridBagConstraints.HORIZONTAL;
-        gc.weightx    = 1.0;
-        gc.anchor     = GridBagConstraints.WEST;
+        gc.gridheight = 1; gc.gridx = 1;
+        gc.fill = GridBagConstraints.HORIZONTAL;
+        gc.weightx = 1.0;
+        gc.anchor = GridBagConstraints.WEST;
 
-        // Name label
-        gc.gridy  = 0;
-        gc.insets = new Insets(0, 0, 4, 0);
+        gc.gridy = 0; gc.insets = new Insets(0, 0, 4, 0);
         JLabel nameLbl = new JLabel("Name");
         nameLbl.setFont(boldFont);
         nameLbl.setForeground(LABEL_COLOR);
         centerPanel.add(nameLbl, gc);
 
-        // Name field
-        gc.gridy  = 1;
-        gc.insets = new Insets(0, 0, 20, 0);
+        gc.gridy = 1; gc.insets = new Insets(0, 0, 20, 0);
         nameField = new JTextField() {
             @Override protected void paintComponent(Graphics g) {
                 Graphics2D g2 = (Graphics2D) g.create();
@@ -307,24 +289,18 @@ public class IdentityCreationLayer extends JPanel {
         nameField.setCaretColor(new Color(20, 20, 40));
         nameField.setPreferredSize(new Dimension(0, 36));
         nameField.addKeyListener(new KeyAdapter() {
-            @Override public void keyReleased(KeyEvent e) {
-                playerName = nameField.getText().trim();
-            }
+            @Override public void keyReleased(KeyEvent e) { playerName = nameField.getText().trim(); }
         });
         centerPanel.add(nameField, gc);
 
-        // Gender label
-        gc.gridy  = 2;
-        gc.insets = new Insets(0, 0, 8, 0);
+        gc.gridy = 2; gc.insets = new Insets(0, 0, 8, 0);
         JLabel genderLbl = new JLabel("Gender");
         genderLbl.setFont(boldFont);
         genderLbl.setForeground(LABEL_COLOR);
         centerPanel.add(genderLbl, gc);
 
-        // Gender buttons row
-        gc.gridy  = 3;
-        gc.insets = new Insets(0, 0, 0, 0);
-        gc.fill   = GridBagConstraints.NONE;
+        gc.gridy = 3; gc.insets = new Insets(0, 0, 0, 0);
+        gc.fill = GridBagConstraints.NONE;
         JPanel genderRow = new JPanel(new FlowLayout(FlowLayout.LEFT, 12, 0));
         genderRow.setOpaque(false);
         maleBtn   = buildGenderButton("\u2642", "MALE",   MALE_BASE);
@@ -337,35 +313,27 @@ public class IdentityCreationLayer extends JPanel {
 
         card.add(centerPanel, BorderLayout.CENTER);
 
-        // ── SOUTH: ID stripe ──────────────────────────────────────────────────
+        // SOUTH: ID stripe
         JPanel stripePanel = new JPanel(new GridBagLayout());
         stripePanel.setOpaque(false);
         stripePanel.setPreferredSize(new Dimension(0, 36));
         idNumberLabel = new JLabel(idNumber + "   \u2022   EMPLOYEE", SwingConstants.CENTER);
         idNumberLabel.setFont(bodyFont.deriveFont(Font.BOLD, 10f));
-        idNumberLabel.setForeground(new Color(170, 185, 210));
+        idNumberLabel.setForeground(new Color(200, 210, 230));              // ← lighter blue-white, was gold
         stripePanel.add(idNumberLabel);
         card.add(stripePanel, BorderLayout.SOUTH);
 
-        // ── Below card: warning + confirm ─────────────────────────────────────
+        // Below card: warning + confirm
         JPanel south = new JPanel();
         south.setOpaque(false);
         south.setLayout(new BoxLayout(south, BoxLayout.Y_AXIS));
         south.setBorder(BorderFactory.createEmptyBorder(14, 0, 0, 0));
-
-        warningLabel = new JLabel("\u26A0  All changes are final once confirmed.", SwingConstants.CENTER);
-        warningLabel.setFont(bodyFont.deriveFont(Font.ITALIC, 12f));
-        warningLabel.setForeground(WARNING_NORM);
-        warningLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
-        south.add(warningLabel);
-        south.add(Box.createVerticalStrut(10));
 
         confirmBtn = buildConfirmButton();
         confirmBtn.setFocusable(false);
         confirmBtn.setAlignmentX(Component.CENTER_ALIGNMENT);
         south.add(confirmBtn);
 
-        // ── Assemble ──────────────────────────────────────────────────────────
         JPanel container = new JPanel();
         container.setOpaque(false);
         container.setLayout(new BoxLayout(container, BoxLayout.Y_AXIS));
@@ -386,19 +354,21 @@ public class IdentityCreationLayer extends JPanel {
                     public void mouseExited (MouseEvent e) { hov = false; repaint(); }
                 });
             }
+            @Override public void update(Graphics g) { paintComponent(g); } // prevents stale layer buildup
             @Override protected void paintComponent(Graphics g) {
                 Graphics2D g2 = (Graphics2D) g.create();
                 g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-
+                // Clear first
+                g2.setComposite(AlphaComposite.Clear);
+                g2.fillRect(0, 0, getWidth(), getHeight());
+                g2.setComposite(AlphaComposite.SrcOver);
                 boolean selected = gender.equals(playerGender);
                 Color bg = selected ? SELECTED_HL : (hov ? baseColor.darker() : baseColor);
                 g2.setColor(bg);
                 g2.fillRoundRect(0, 0, getWidth(), getHeight(), 8, 8);
-
                 g2.setColor(selected ? new Color(40, 130, 70) : new Color(100, 100, 110));
                 g2.setStroke(new BasicStroke(selected ? 2f : 1.5f));
                 g2.drawRoundRect(0, 0, getWidth() - 1, getHeight() - 1, 8, 8);
-
                 g2.setFont(new Font("Arial", Font.BOLD, 22));
                 g2.setColor(selected ? Color.WHITE : LABEL_COLOR);
                 FontMetrics fm = g2.getFontMetrics();
@@ -408,6 +378,7 @@ public class IdentityCreationLayer extends JPanel {
                 g2.dispose();
             }
         };
+        btn.setOpaque(false);
         btn.setBorderPainted(false);
         btn.setContentAreaFilled(false);
         btn.setFocusPainted(false);
@@ -460,18 +431,12 @@ public class IdentityCreationLayer extends JPanel {
 
         if (playerName.isEmpty()) {
             shakeField(nameField);
-            warningLabel.setForeground(WARNING_ERR);
-            warningLabel.setText("\u26A0  Please enter your name before confirming.");
             return;
         }
         if (playerGender.isEmpty()) {
-            warningLabel.setForeground(WARNING_ERR);
-            warningLabel.setText("\u26A0  Please select a gender before confirming.");
+            shakeField(maleBtn);
             return;
         }
-
-        warningLabel.setForeground(WARNING_NORM);
-        warningLabel.setText("\u26A0  All changes are final once confirmed.");
 
         String pronounDisplay = playerGender.equals("FEMALE") ? "she/her" : "he/him";
 

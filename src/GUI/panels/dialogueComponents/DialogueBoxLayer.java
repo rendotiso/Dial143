@@ -224,13 +224,15 @@ public class DialogueBoxLayer extends JPanel {
     }
     
     private void loadCustomFonts() {
+        
         try {
-            InputStream mulish = getClass().getResourceAsStream("/GUI/resources/font/Mulish-VariableFont_wght.ttf");
-            if (mulish != null) {
-                mulishFont = Font.createFont(Font.TRUETYPE_FONT, mulish);
-            } else {
-                mulishFont = null;
-            }
+            InputStream stream = getClass().getResourceAsStream("/GUI/resources/font/Mulish-VariableFont_wght.ttf");
+            if (stream == null) { mulishFont = null; return; }
+            Font base = Font.createFont(Font.TRUETYPE_FONT, stream);
+            java.util.Map<java.awt.font.TextAttribute, Object> attrs = new java.util.HashMap<>();
+            attrs.put(java.awt.font.TextAttribute.WEIGHT, java.awt.font.TextAttribute.WEIGHT_BOLD);
+            mulishFont = base.deriveFont(attrs);
+  
             
             InputStream unica = getClass().getResourceAsStream("/GUI/resources/font/UnicaOne-Regular.ttf");
             if (unica != null) {

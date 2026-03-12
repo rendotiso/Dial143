@@ -24,7 +24,7 @@ public class ShiftPanel extends JPanel {
 
     private void initializeLayers() {
         bg = new BackgroundLayer();
-        bg.setBackgroundFromFile("placeholderBG3.jpg");
+        bg.setBackgroundFromFile("MorningOffice.jpg");
 
         topBar = new TopBarComponents(mainPanel);
         topBar.setSettingsPanel(settings);

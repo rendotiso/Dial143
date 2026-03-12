@@ -183,7 +183,6 @@ public class ChoiceButtonLayer extends JPanel {
         }
     }
     
-    // Method to check if a choice is unlocked
     public boolean isChoiceUnlocked(int index) {
         if (index >= 0 && index < choiceButtons.size()) {
             return choiceButtons.get(index).isUnlocked();
