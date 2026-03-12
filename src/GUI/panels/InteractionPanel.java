@@ -127,7 +127,7 @@ public class InteractionPanel extends javax.swing.JPanel {
         // 7
         {"Rosario",
          "Don't worry Amaya, {pronoun_subject} can do this.",
-         "single:Rosario", "MorningOffice.jpg"},
+         "double:Amaya:Rosario", "MorningOffice.jpg"},
  
         // 8 — choice: respond to Rosario
         {"CHOICE", "", "", ""},
@@ -286,7 +286,7 @@ if (speaker.equals("CHOICE")) {
         sprite.hideAllSprites();
     } else if (spriteSpec.startsWith("single:")) {
         sprite.showSingleSprite(spriteSpec.split(":")[1]);
-    } else if (spriteSpec.startsWith("two:")) {
+    } else if (spriteSpec.startsWith("double:")) {
         String[] p = spriteSpec.split(":");
         sprite.showTwoSprites(p[1], p[2]);
     } else if (spriteSpec.startsWith("triple:")) {

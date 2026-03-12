@@ -34,52 +34,57 @@ public class TopBarComponents extends JPanel {
         setLayout(null);
         setOpaque(false);
 
-        ppLabel = new JLabel("Perfor. Points:");
-        ppLabel.setBounds(20, 10, 180, 30);
-        ppLabel.setForeground(Color.WHITE);
-        ppLabel.setFont(pixelFont != null ? pixelFont.deriveFont(16f) : new Font("Arial", Font.BOLD, 16));
-        add(ppLabel);
+    ppLabel = new JLabel("Performance:");
+    ppLabel.setBounds(20, 10, 180, 30);
+    ppLabel.setForeground(Color.WHITE);
+    ppLabel.setIcon(loadIcon("performance meter.png", 28, 28));
+    ppLabel.setFont(pixelFont != null ? pixelFont.deriveFont(16f) : new Font("Arial", Font.BOLD, 16));
+    add(ppLabel);
 
-        ppValue = new JLabel("0");
-        ppValue.setBounds(155, 10, 60, 30);
-        ppValue.setForeground(Color.WHITE);
-        ppValue.setFont(pixelFont != null ? pixelFont.deriveFont(18f) : new Font("Arial", Font.BOLD, 18));
-        add(ppValue);
+    ppValue = new JLabel("0");
+    ppValue.setBounds(160, 10, 60, 30);
+    ppValue.setForeground(Color.WHITE);
+    ppValue.setFont(pixelFont != null ? pixelFont.deriveFont(18f) : new Font("Arial", Font.BOLD, 18));
+    add(ppValue);
 
-        lpLabel = new JLabel("Love Points:");
-        lpLabel.setBounds(20, 38, 130, 30);
-        lpLabel.setForeground(Color.WHITE);
-        lpLabel.setFont(pixelFont != null ? pixelFont.deriveFont(16f) : new Font("Arial", Font.BOLD, 16));
-        add(lpLabel);
+    lpLabel = new JLabel("Love Meter:");
+    lpLabel.setBounds(20, 38, 130, 30);
+    lpLabel.setForeground(Color.WHITE);
+    lpLabel.setIcon(loadIcon("love meter.png", 28, 28));
+    lpLabel.setFont(pixelFont != null ? pixelFont.deriveFont(16f) : new Font("Arial", Font.BOLD, 16));
+    add(lpLabel);
 
-        lpValue = new JLabel("0");
-        lpValue.setBounds(155, 38, 60, 30);
-        lpValue.setForeground(Color.WHITE);
-        lpValue.setFont(pixelFont != null ? pixelFont.deriveFont(18f) : new Font("Arial", Font.BOLD, 18));
-        add(lpValue);
+    lpValue = new JLabel("0");
+    lpValue.setBounds(160, 38, 60, 30);
+    lpValue.setForeground(Color.WHITE);
+    lpValue.setFont(pixelFont != null ? pixelFont.deriveFont(18f) : new Font("Arial", Font.BOLD, 18));
+    add(lpValue);
 
-        salaryLabel = new JLabel("Salary:");
-        salaryLabel.setBounds(20, 66, 130, 30);
-        salaryLabel.setForeground(Color.WHITE);
-        salaryLabel.setFont(pixelFont != null ? pixelFont.deriveFont(16f) : new Font("Arial", Font.BOLD, 16));
-        add(salaryLabel);
+    salaryLabel = new JLabel("Salary:");
+    salaryLabel.setBounds(20, 66, 130, 30);
+    salaryLabel.setForeground(Color.WHITE);
+    salaryLabel.setIcon(loadIcon("salaryIcon.png", 28, 28));
+    salaryLabel.setFont(pixelFont != null ? pixelFont.deriveFont(16f) : new Font("Arial", Font.BOLD, 16));
+    add(salaryLabel);
 
-        salaryValue = new JLabel("0");
-        salaryValue.setBounds(155, 66, 60, 30);
-        salaryValue.setForeground(Color.WHITE);
-        salaryValue.setFont(pixelFont != null ? pixelFont.deriveFont(18f) : new Font("Arial", Font.BOLD, 18));
-        add(salaryValue);
+    salaryValue = new JLabel("0");
+    salaryValue.setBounds(160, 66, 60, 30);
+    salaryValue.setForeground(Color.WHITE);
+    salaryValue.setFont(pixelFont != null ? pixelFont.deriveFont(18f) : new Font("Arial", Font.BOLD, 18));
+    add(salaryValue);
 
-        btnInventory = new JButton("Inventory");
-        btnInventory.setBounds(1035, 15, 105, 35);
-        styleButton(btnInventory);
-        btnInventory.addActionListener(e -> handleInventoryClick());
-        add(btnInventory);
+    btnInventory  = new JButton();
+    btnInventory.setBounds(1120, 15, 100, 35);
+    btnInventory.setIcon(loadIcon("inventory icon.png", 80, 35));
+    styleButton(btnInventory);
+    btnInventory.addActionListener(e -> handleInventoryClick());
+    add(btnInventory);
 
-        btnSettings = new JButton("Settings");
-        btnSettings.setBounds(1150, 15, 100, 35);
-        styleButton(btnSettings);
-        add(btnSettings);
+    btnSettings = new JButton();
+    btnSettings.setBounds(1180, 15, 100, 35);
+    btnSettings.setIcon(loadIcon("settings icon.png", 80, 35));
+    styleButton(btnSettings);
+    add(btnSettings);
 
         setComponentZOrder(ppLabel,      0);
         setComponentZOrder(ppValue,      1);
@@ -87,6 +92,7 @@ public class TopBarComponents extends JPanel {
         setComponentZOrder(lpValue,      3);
         setComponentZOrder(btnInventory, 4);
         setComponentZOrder(btnSettings,  5);
+
     }
 
     // ── Dark gradient behind stats so labels are readable on any background ───
@@ -105,7 +111,22 @@ public class TopBarComponents extends JPanel {
         g2.dispose();
         super.paintComponent(g);
     }
-
+    
+    
+    // SETTING ICON IMAGE
+    private ImageIcon loadIcon(String filename, int maxW, int maxH) {
+        try {
+            java.io.InputStream s = getClass().getResourceAsStream("/GUI/resources/icons/" + filename);
+            if (s == null) return null;
+            java.awt.image.BufferedImage raw = javax.imageio.ImageIO.read(s);
+            double scale = Math.min((double) maxW / raw.getWidth(), (double) maxH / raw.getHeight());
+            int newW = Math.max(1, (int)(raw.getWidth()  * scale));
+            int newH = Math.max(1, (int)(raw.getHeight() * scale));
+            return new ImageIcon(raw.getScaledInstance(newW, newH, Image.SCALE_SMOOTH));
+        } catch (Exception ex) {
+            return null;
+        }
+    }
     // ── Settings / inventory wiring ───────────────────────────────────────────
 
     public void setSettingsPanel(SettingsPanel settings) {
@@ -156,30 +177,11 @@ public class TopBarComponents extends JPanel {
     }
 
     private void styleButton(JButton btn) {
-        btn.setBackground(new Color(70, 70, 70));
-        btn.setForeground(Color.WHITE);
+        btn.setContentAreaFilled(false);
+        btn.setBorderPainted(false);
         btn.setFocusPainted(false);
-        btn.setFont(pixelFont != null ? pixelFont.deriveFont(15f) : new Font("Arial", Font.BOLD, 15));
-        btn.setBorder(BorderFactory.createCompoundBorder(
-            BorderFactory.createLineBorder(new Color(150, 150, 150), 1),
-            BorderFactory.createEmptyBorder(5, 10, 5, 10)
-        ));
-        btn.addMouseListener(new MouseAdapter() {
-            public void mouseEntered(MouseEvent e) {
-                btn.setBackground(new Color(100, 100, 100));
-                btn.setBorder(BorderFactory.createCompoundBorder(
-                    BorderFactory.createLineBorder(new Color(200, 200, 200), 1),
-                    BorderFactory.createEmptyBorder(5, 10, 5, 10)
-                ));
-            }
-            public void mouseExited(MouseEvent e) {
-                btn.setBackground(new Color(70, 70, 70));
-                btn.setBorder(BorderFactory.createCompoundBorder(
-                    BorderFactory.createLineBorder(new Color(150, 150, 150), 1),
-                    BorderFactory.createEmptyBorder(5, 10, 5, 10)
-                ));
-            }
-        });
+        btn.setOpaque(false);
+        btn.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
     }
 
     // ── Callbacks / config ────────────────────────────────────────────────────
