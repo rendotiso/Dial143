@@ -6,7 +6,7 @@ This game is set at a call center (Khai G. Call Center Agency), where the player
 1. Immersive Call Center Setting
 2. Multiple Love Interests (2 Men and 2 Women)
 3. Different Endings for each route
-4. Save/Load system using SQL
+4. Save/Load system
 
 # Love Interests
 1. Amaya - Your Childhood friend who happened to be now your fellow coworker!
