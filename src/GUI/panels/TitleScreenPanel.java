@@ -23,7 +23,7 @@ public class TitleScreenPanel extends javax.swing.JPanel  {
     private void initializeLayers() {
         
             bg = new BackgroundLayer();
-            bg.setBackgroundFromFile("TitleBackground.jpg");
+            bg.setBackgroundFromFile("game title bg.png");
 
             buttons = new TitleScreenComponents();
             buttons.setTitleImage("gameTitle.png");

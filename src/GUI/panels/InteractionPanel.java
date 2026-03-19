@@ -75,6 +75,14 @@ public class InteractionPanel extends javax.swing.JPanel {
         uiComponents.setPpValue(mainPanel.getPP());
         uiComponents.setLpValue(mainPanel.getLP());
         uiComponents.setSalaryValue(mainPanel.getSalary());
+ 
+        // Update day indicator based on current segment
+        switch (mainPanel.getCurrentSegment()) {
+            case MORNING -> uiComponents.setDayInfo(mainPanel.getCurrentDay(), "Morning");
+            case EVENING -> uiComponents.setDayInfo(mainPanel.getCurrentDay(), "Evening");
+            case ENDING  -> uiComponents.setDayInfo(mainPanel.getCurrentDay(), "Ending");
+        }
+ 
         currentScene = mainPanel.getDialogueScene();
         loadScene(currentScene);
     }
@@ -180,129 +188,114 @@ public class InteractionPanel extends javax.swing.JPanel {
         }
     }
  
-private void loadScene(int sceneIndex) {
-    String[][] scenes = getCurrentScenes();
-
-    if (sceneIndex >= scenes.length) {
-        saveStats();
-        switch (mainPanel.getCurrentSegment()) {
-            case MORNING -> mainPanel.onMorningComplete();
-            case EVENING -> mainPanel.onEveningComplete();
-            case ENDING  -> mainPanel.onGameComplete();
-        }
-        return;
-    }
-
-    String[] scene      = scenes[sceneIndex];
-    String   speaker    = scene[0];
-    String   text       = scene[1];
-    String   spriteSpec = scene[2];
-    String   bgName     = scene[3];
-
-    // ── Identity creation ─────────────────────────────────────────────────
-    if (speaker.equals("IDENTITY_CREATION")) {
-        showingIdentityCreation = true;
-        SwingUtilities.invokeLater(() -> {
-            identityPopup.reset();
-            identityPopup.showAsPopup();
-        });
-        return;
-    }
-
-    if (showingIdentityCreation) showingIdentityCreation = false;
-
-// ── Choice scene ──────────────────────────────────────────────────────
-if (speaker.equals("CHOICE")) {
-    String[][] choiceData = getChoiceLabelsForScene(sceneIndex);
-    if (choiceData != null) {
-        // Clear any existing choices
-        choices.clearChoices();
-        
-        // Add each choice with its node (using index as node for simplicity)
-        for (int i = 0; i < choiceData.length; i++) {
-            String label = choiceData[i][0];
-            String node = "choice_" + i; // Simple node identifier
-            choices.addChoice(label, node, true); // All choices unlocked for now
-        }
-        
-        // Set the listener to handle choice selection
-        choices.setChoiceListener(new ChoiceButtonLayer.ChoiceListener() {
-            @Override
-            public void onChoiceSelected(String choiceText, String nextNode) {
-                // Find which choice was selected by matching text
-                for (int i = 0; i < choiceData.length; i++) {
-                    if (choiceData[i][0].equals(choiceText)) {
-                        // Award points based on choice
-                        int pp = Integer.parseInt(choiceData[i][1]);
-                        int lp = Integer.parseInt(choiceData[i][2]);
-                        uiComponents.addPpPoints(pp);
-                        uiComponents.addLpPoints(lp);
-                        
-                        // Hide choices
-                        choices.hideChoices();
-                        
-                        // Advance to next scene
-                        SwingUtilities.invokeLater(() -> {
-                            advanceScene();
-                        });
-                        break;
-                    }
-                }
+    private void loadScene(int sceneIndex) {
+        String[][] scenes = getCurrentScenes();
+ 
+        if (sceneIndex >= scenes.length) {
+            saveStats();
+            switch (mainPanel.getCurrentSegment()) {
+                case MORNING -> mainPanel.onMorningComplete();
+                case EVENING -> mainPanel.onEveningComplete();
+                case ENDING  -> mainPanel.onGameComplete();
             }
-        });
-        
-        // Show the choices
-        choices.showChoices();
-    } else {
-        // No choices defined, just advance
-        advanceScene();
+            return;
+        }
+ 
+        String[] scene      = scenes[sceneIndex];
+        String   speaker    = scene[0];
+        String   text       = scene[1];
+        String   spriteSpec = scene[2];
+        String   bgName     = scene[3];
+ 
+        // ── Identity creation ─────────────────────────────────────────────────
+        if (speaker.equals("IDENTITY_CREATION")) {
+            showingIdentityCreation = true;
+            SwingUtilities.invokeLater(() -> {
+                identityPopup.reset();
+                identityPopup.showAsPopup();
+            });
+            return;
+        }
+ 
+        if (showingIdentityCreation) showingIdentityCreation = false;
+ 
+        // ── Choice scene ──────────────────────────────────────────────────────
+        if (speaker.equals("CHOICE")) {
+            String[][] choiceData = getChoiceLabelsForScene(sceneIndex);
+            if (choiceData != null) {
+                choices.clearChoices();
+                for (int i = 0; i < choiceData.length; i++) {
+                    choices.addChoice(choiceData[i][0], "choice_" + i, true);
+                }
+                choices.setChoiceListener(new ChoiceButtonLayer.ChoiceListener() {
+                    @Override
+                    public void onChoiceSelected(String choiceText, String nextNode) {
+                        for (int i = 0; i < choiceData.length; i++) {
+                            if (choiceData[i][0].equals(choiceText)) {
+                                int pp = Integer.parseInt(choiceData[i][1]);
+                                int lp = Integer.parseInt(choiceData[i][2]);
+                                uiComponents.addPpPoints(pp);
+                                uiComponents.addLpPoints(lp);
+                                // Track LP gains from dialogue choices in shiftLP
+                                mainPanel.setLP(mainPanel.getLP() + lp);
+                                mainPanel.setPP(mainPanel.getPP() + pp);
+                                choices.hideChoices();
+                                SwingUtilities.invokeLater(() -> advanceScene());
+                                break;
+                            }
+                        }
+                    }
+                });
+                choices.showChoices();
+            } else {
+                advanceScene();
+            }
+            return;
+        }
+ 
+        // ── Normal dialogue scene ─────────────────────────────────────────────
+        if (bgName != null && !bgName.isEmpty()) {
+            bg.setBackgroundFromFile(bgName);
+        } else {
+            bg.setBackgroundColor(new Color(20, 30, 40));
+        }
+ 
+        // Substitute placeholders
+        String playerName    = mainPanel.getPlayerName();
+        String playerPronoun = mainPanel.getPlayerPronoun();
+        String pronounSubject = (playerPronoun != null && playerPronoun.contains("/"))
+            ? playerPronoun.split("/")[0] : "they";
+        String possessive = (playerPronoun != null && playerPronoun.equals("she/her")) ? "her" : "his";
+ 
+        text = text.replace("{name}",              playerName != null ? playerName : "")
+                   .replace("{pronoun_subject}",   pronounSubject)
+                   .replace("{pronoun_possessive}", possessive);
+ 
+        dialogueBox.setSpeaker(speaker);
+        dialogueBox.setDialogue(text);
+ 
+        // Sprites
+        if (spriteSpec.equals("none")) {
+            sprite.hideAllSprites();
+        } else if (spriteSpec.startsWith("single:")) {
+            sprite.showSingleSprite(spriteSpec.split(":")[1]);
+        } else if (spriteSpec.startsWith("double:")) {
+            String[] p = spriteSpec.split(":");
+            sprite.showTwoSprites(p[1], p[2]);
+        } else if (spriteSpec.startsWith("triple:")) {
+            String[] p = spriteSpec.split(":");
+            sprite.showThreeSprites(p[1], p[2], p[3]);
+        } else if (spriteSpec.startsWith("quadruple:")) {
+            String[] p = spriteSpec.split(":");
+            sprite.showFourSprites(p[1], p[2], p[3], p[4]);
+        } else {
+            sprite.showSingleSprite(spriteSpec);
+        }
+ 
+        choices.hideChoices();
+        revalidate();
+        repaint();
     }
-    return;
-}
-
-    // ── Normal dialogue scene ─────────────────────────────────────────────
-    if (bgName != null && !bgName.isEmpty()) {
-        bg.setBackgroundFromFile(bgName);
-    } else {
-        bg.setBackgroundColor(new Color(20, 30, 40));
-    }
-
-    // Substitute {name} and {pronoun_subject}
-    String playerName = mainPanel.getPlayerName();
-    String playerPronoun = mainPanel.getPlayerPronoun();
-    String pronounSubject = (playerPronoun != null && playerPronoun.contains("/"))
-        ? playerPronoun.split("/")[0] : "they";
-    String possessive = (playerPronoun != null && playerPronoun.equals("she/her")) ? "her" : "his";
-    
-    text = text.replace("{name}", playerName != null ? playerName : "")
-               .replace("{pronoun_subject}", pronounSubject)
-               .replace("{pronoun_possessive}", possessive);
-
-    dialogueBox.setSpeaker(speaker);
-    dialogueBox.setDialogue(text);
-
-    // Handle sprite display
-    if (spriteSpec.equals("none")) {
-        sprite.hideAllSprites();
-    } else if (spriteSpec.startsWith("single:")) {
-        sprite.showSingleSprite(spriteSpec.split(":")[1]);
-    } else if (spriteSpec.startsWith("double:")) {
-        String[] p = spriteSpec.split(":");
-        sprite.showTwoSprites(p[1], p[2]);
-    } else if (spriteSpec.startsWith("triple:")) {
-        String[] p = spriteSpec.split(":");
-        sprite.showThreeSprites(p[1], p[2], p[3]);
-    } else if (spriteSpec.startsWith("quadruple:")) {
-        String[] p = spriteSpec.split(":");
-        sprite.showFourSprites(p[1], p[2], p[3], p[4]);
-    } else {
-        sprite.showSingleSprite(spriteSpec);
-    }
-
-    choices.hideChoices();
-    revalidate();
-    repaint();
-}
  
     private void advanceScene() {
         currentScene++;

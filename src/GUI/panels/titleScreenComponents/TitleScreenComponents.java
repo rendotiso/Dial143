@@ -15,7 +15,6 @@ public class TitleScreenComponents extends JPanel {
     private Runnable onSave;
     private Runnable onExit;
 
-    // ── Match CallCreation palette exactly ────────────────────────────────────
     private static final Color CHOICE_NORMAL = new Color(238, 238, 238);
     private static final Color CHOICE_HOVER  = new Color(200, 215, 240);
     private static final Color CHOICE_CHOSEN = new Color(180, 195, 225);
@@ -36,21 +35,21 @@ public class TitleScreenComponents extends JPanel {
         titleLabel.setForeground(Color.WHITE);
         titleLabel.setHorizontalAlignment(SwingConstants.CENTER);
         titleLabel.setVerticalAlignment(SwingConstants.CENTER);
-        titleLabel.setBounds(58, 78, 294, 216);
+        titleLabel.setBounds(125, 78, 294, 216);
         add(titleLabel);
 
         btnPlay = buildChoiceButton("New Game");
-        btnPlay.setBounds(88, 444, 236, 38);
+        btnPlay.setBounds(108, 444, 236, 38);
         btnPlay.addActionListener(e -> { if (onPlay != null) onPlay.run(); });
         add(btnPlay);
 
         btnSave = buildChoiceButton("Load Save");
-        btnSave.setBounds(88, 492, 236, 38);
+        btnSave.setBounds(108, 492, 236, 38);
         btnSave.addActionListener(e -> { if (onSave != null) onSave.run(); });
         add(btnSave);
 
         btnExit = buildChoiceButton("Exit");
-        btnExit.setBounds(88, 540, 236, 38);
+        btnExit.setBounds(108, 540, 236, 38);
         btnExit.addActionListener(e -> { if (onExit != null) onExit.run(); });
         add(btnExit);
     }

@@ -16,9 +16,14 @@ public class MainFrame extends JFrame {
     private SettingsPanel    settingsPanel;
     private ShiftPanel       shiftPanel;
     private ShopPanel        shopPanel;
+    private DaySummaryPanel  daySummary;
 
     private TransitionLayer transitionLayer;
-//    private DaySummaryPanel daySummary;
+
+    // ── Shift start snapshots (for "gained this shift" calculation) ───────────
+    private int ppAtShiftStart;
+    private int lpAtShiftStart;
+    private int salaryAtShiftStart;
 
     // ── Player identity ───────────────────────────────────────────────────────
     private Player playerProfile = new Player();
@@ -79,6 +84,9 @@ public class MainFrame extends JFrame {
         dialogueDone        = false;
         currentSegment      = Segment.MORNING;
         playerProfile       = new Player();
+        ppAtShiftStart      = 0;
+        lpAtShiftStart      = 0;
+        salaryAtShiftStart  = 0;
     }
 
     // ── Screen routing ────────────────────────────────────────────────────────
@@ -88,7 +96,13 @@ public class MainFrame extends JFrame {
             switch (screenName) {
                 case "dialogue" -> dialoguePanel.loadContent();
                 case "shift"    -> shiftPanel.loadCall();
-//                case "shop"     -> shopPanel.loadShop();
+                case "shop"     -> shopPanel.loadShop();
+                case "summary"  -> daySummary.loadSummary(
+                    sharedPP, sharedLP, sharedSalary,
+                    callsCompletedToday,
+                    () -> onEndDay(),
+                    () -> showScreen("shop")
+                );
             }
             transitionLayer.fadeIn();
         });
@@ -97,6 +111,9 @@ public class MainFrame extends JFrame {
     // ── Game flow callbacks ───────────────────────────────────────────────────
 
     public void onMorningComplete() {
+        ppAtShiftStart      = sharedPP;
+        lpAtShiftStart      = sharedLP;
+        salaryAtShiftStart  = sharedSalary;
         callsCompletedToday = 0;
         showScreen("shift");
     }
@@ -109,12 +126,26 @@ public class MainFrame extends JFrame {
     }
 
     public void onEveningComplete() {
-//        daySummary.show(currentDay, sharedPP, sharedLP, sharedSalary,
-//            callsCompletedToday, () -> showScreen("shop"));
+        showDaySummary();
     }
 
+    /**
+     * Central method that shows the day summary popup.
+     * Called both from onEveningComplete AND from onShopComplete,
+     * so the player always returns here after shopping.
+     */
+    private void showDaySummary() {
+        showScreen("summary");
+    }
+
+    /**
+     * Called by ShopPanel when the player leaves the shop.
+     * Transitions back to the evening dialogue screen first, THEN
+     * re-shows the day summary so the player can click "End Day"
+     * with the correct scene behind it.
+     */
     public void onShopComplete() {
-        onEndDay();
+        showDaySummary();
     }
 
     public void onEndDay() {
@@ -167,11 +198,13 @@ public class MainFrame extends JFrame {
         dialoguePanel = new InteractionPanel(this, settingsPanel);
         shiftPanel    = new ShiftPanel(this, settingsPanel);
         shopPanel     = new ShopPanel(this, settingsPanel);
+        daySummary    = new DaySummaryPanel(this, settingsPanel);
 
         mainContainer.add(titlePanel,    "title");
         mainContainer.add(dialoguePanel, "dialogue");
         mainContainer.add(shiftPanel,    "shift");
         mainContainer.add(shopPanel,     "shop");
+        mainContainer.add(daySummary,    "summary");
     }
 
     private void setupLayeredContent() {

@@ -25,6 +25,7 @@ public class TopBarComponents extends JPanel {
     private javax.swing.JLabel  ppValue;
     private javax.swing.JLabel  salaryLabel;
     private javax.swing.JLabel  salaryValue;
+    private javax.swing.JLabel  dayLabel;
 
     public TopBarComponents(MainFrame mainFrame) {
         this.mainFrame = mainFrame;
@@ -34,86 +35,143 @@ public class TopBarComponents extends JPanel {
         setLayout(null);
         setOpaque(false);
 
-    ppLabel = new JLabel("Performance:");
-    ppLabel.setBounds(20, 10, 180, 30);
-    ppLabel.setForeground(Color.WHITE);
-    ppLabel.setIcon(loadIcon("performance meter.png", 28, 28));
-    ppLabel.setFont(pixelFont != null ? pixelFont.deriveFont(16f) : new Font("Arial", Font.BOLD, 16));
-    add(ppLabel);
+        // ── Stat rows ─────────────────────────────────────────────────────────
+        ppLabel = new JLabel("Performance:");
+        ppLabel.setBounds(15, 10, 180, 30);
+        ppLabel.setForeground(Color.WHITE);
+        ppLabel.setIcon(loadIcon("performance3.png", 28, 28));
+        ppLabel.setFont(pixelFont != null ? pixelFont.deriveFont(16f) : new Font("Arial", Font.BOLD, 16));
+        add(ppLabel);
 
-    ppValue = new JLabel("0");
-    ppValue.setBounds(160, 10, 60, 30);
-    ppValue.setForeground(Color.WHITE);
-    ppValue.setFont(pixelFont != null ? pixelFont.deriveFont(18f) : new Font("Arial", Font.BOLD, 18));
-    add(ppValue);
+        ppValue = new JLabel("0");
+        ppValue.setBounds(160, 10, 60, 30);
+        ppValue.setForeground(Color.WHITE);
+        ppValue.setFont(pixelFont != null ? pixelFont.deriveFont(18f) : new Font("Arial", Font.BOLD, 18));
+        add(ppValue);
 
-    lpLabel = new JLabel("Love Meter:");
-    lpLabel.setBounds(20, 38, 130, 30);
-    lpLabel.setForeground(Color.WHITE);
-    lpLabel.setIcon(loadIcon("love meter.png", 28, 28));
-    lpLabel.setFont(pixelFont != null ? pixelFont.deriveFont(16f) : new Font("Arial", Font.BOLD, 16));
-    add(lpLabel);
+        lpLabel = new JLabel("Love Meter:");
+        lpLabel.setBounds(15, 38, 130, 30);
+        lpLabel.setForeground(Color.WHITE);
+        lpLabel.setIcon(loadIcon("love meter.png", 28, 28));
+        lpLabel.setFont(pixelFont != null ? pixelFont.deriveFont(16f) : new Font("Arial", Font.BOLD, 16));
+        add(lpLabel);
 
-    lpValue = new JLabel("0");
-    lpValue.setBounds(160, 38, 60, 30);
-    lpValue.setForeground(Color.WHITE);
-    lpValue.setFont(pixelFont != null ? pixelFont.deriveFont(18f) : new Font("Arial", Font.BOLD, 18));
-    add(lpValue);
+        lpValue = new JLabel("0");
+        lpValue.setBounds(160, 38, 60, 30);
+        lpValue.setForeground(Color.WHITE);
+        lpValue.setFont(pixelFont != null ? pixelFont.deriveFont(18f) : new Font("Arial", Font.BOLD, 18));
+        add(lpValue);
 
-    salaryLabel = new JLabel("Salary:");
-    salaryLabel.setBounds(20, 66, 130, 30);
-    salaryLabel.setForeground(Color.WHITE);
-    salaryLabel.setIcon(loadIcon("salaryIcon.png", 28, 28));
-    salaryLabel.setFont(pixelFont != null ? pixelFont.deriveFont(16f) : new Font("Arial", Font.BOLD, 16));
-    add(salaryLabel);
+        salaryLabel = new JLabel("Salary:");
+        salaryLabel.setBounds(15, 66, 130, 30);
+        salaryLabel.setForeground(Color.WHITE);
+        salaryLabel.setIcon(loadIcon("silverSalary.png", 28, 28));
+        salaryLabel.setFont(pixelFont != null ? pixelFont.deriveFont(16f) : new Font("Arial", Font.BOLD, 16));
+        add(salaryLabel);
 
-    salaryValue = new JLabel("0");
-    salaryValue.setBounds(160, 66, 60, 30);
-    salaryValue.setForeground(Color.WHITE);
-    salaryValue.setFont(pixelFont != null ? pixelFont.deriveFont(18f) : new Font("Arial", Font.BOLD, 18));
-    add(salaryValue);
+        salaryValue = new JLabel("0");
+        salaryValue.setBounds(160, 66, 60, 30);
+        salaryValue.setForeground(Color.WHITE);
+        salaryValue.setFont(pixelFont != null ? pixelFont.deriveFont(18f) : new Font("Arial", Font.BOLD, 18));
+        add(salaryValue);
 
-    btnInventory  = new JButton();
-    btnInventory.setBounds(1120, 15, 100, 35);
-    btnInventory.setIcon(loadIcon("inventory icon.png", 80, 35));
-    styleButton(btnInventory);
-    btnInventory.addActionListener(e -> handleInventoryClick());
-    add(btnInventory);
+        // ── Day indicator — centered, pill background ─────────────────────────
+        dayLabel = new JLabel("Day 1  |  Morning", SwingConstants.CENTER) {
+            @Override protected void paintComponent(Graphics g) {
+                Graphics2D g2 = (Graphics2D) g.create();
+                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                LinearGradientPaint gradient = new LinearGradientPaint(
+                    0, 0, getWidth(), 0,
+                    new float[]{ 0f, 0.2f, 0.8f, 1f },
+                    new Color[]{
+                        new Color(0, 0, 0, 0),
+                        new Color(0, 0, 0, 100),
+                        new Color(0, 0, 0, 100),
+                        new Color(0, 0, 0, 0)
+                    }
+                );
+                g2.setPaint(gradient);
+                g2.fillRoundRect(0, 0, getWidth(), getHeight(), getHeight(), getHeight());
+                g2.dispose();
+                super.paintComponent(g);
+            }
+        };
+        dayLabel.setBounds(490, 10, 250, 24);
+        dayLabel.setForeground(Color.WHITE);
+        dayLabel.setOpaque(false);
+        dayLabel.setFont(pixelFont != null ? pixelFont.deriveFont(15f) : new Font("Arial", Font.BOLD, 15));
+        add(dayLabel);
 
-    btnSettings = new JButton();
-    btnSettings.setBounds(1180, 15, 100, 35);
-    btnSettings.setIcon(loadIcon("settings icon.png", 80, 35));
-    styleButton(btnSettings);
-    add(btnSettings);
+        // ── Buttons ───────────────────────────────────────────────────────────
+        btnInventory = new JButton();
+        btnInventory.setBounds(1120, 15, 100, 35);
+        btnInventory.setIcon(loadIcon("inventory icon.png", 80, 35));
+        styleButton(btnInventory);
+        btnInventory.addActionListener(e -> handleInventoryClick());
+        add(btnInventory);
+
+        btnSettings = new JButton();
+        btnSettings.setBounds(1180, 15, 100, 35);
+        btnSettings.setIcon(loadIcon("settings icon.png", 80, 35));
+        styleButton(btnSettings);
+        add(btnSettings);
 
         setComponentZOrder(ppLabel,      0);
         setComponentZOrder(ppValue,      1);
         setComponentZOrder(lpLabel,      2);
         setComponentZOrder(lpValue,      3);
-        setComponentZOrder(btnInventory, 4);
-        setComponentZOrder(btnSettings,  5);
-
+        setComponentZOrder(dayLabel,     4);
+        setComponentZOrder(btnInventory, 5);
+        setComponentZOrder(btnSettings,  6);
     }
 
-    // ── Dark gradient behind stats so labels are readable on any background ───
+    // ── Day label API ─────────────────────────────────────────────────────────
+
+    /**
+     * //@MYLYN ROSARIO
+     * Update the day indicator from anywhere in the game.
+     * Call this in loadContent() / loadCall() when the scene or segment changes.
+     * Example: // InteractionPanel — in loadContent()
+        switch (mainPanel.getCurrentSegment()) {
+            case MORNING -> uiComponents.setDayInfo(mainPanel.getCurrentDay(), "Street");
+            case EVENING -> uiComponents.setDayInfo(mainPanel.getCurrentDay(), "Office");
+            case ENDING  -> uiComponents.setDayInfo(mainPanel.getCurrentDay(), "Ending");
+        }
+
+        // ShiftPanel — in loadCall()
+        uiComponents.setDayInfo(mainPanel.getCurrentDay(), "Call Center");
+        * 
+     */
+    
+    public void setDayInfo(int day, String location) {
+        dayLabel.setText("Day " + day + "  |  " + location);
+        dayLabel.repaint();
+    }
+
+    /** Freeform override, e.g. setDayInfo("Prologue  |  Street") */
+    public void setDayInfo(String text) {
+        dayLabel.setText(text);
+        dayLabel.repaint();
+    }
+
+    // ── Dark gradient behind stats ────────────────────────────────────────────
 
     @Override
     protected void paintComponent(Graphics g) {
         Graphics2D g2 = (Graphics2D) g.create();
         g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-        // Horizontal fade: opaque black on left → transparent at 280px
         GradientPaint gradient = new GradientPaint(
             0,   0, new Color(0, 0, 0, 180),
-            280, 0, new Color(0, 0, 0, 0)
+            220, 0, new Color(0, 0, 0, 0)
         );
         g2.setPaint(gradient);
-        g2.fillRect(0, 0, 280, 105);
+        g2.fillRect(0, 0, 220, 105);
         g2.dispose();
         super.paintComponent(g);
     }
-    
-    
-    // SETTING ICON IMAGE
+
+    // ── Icon loader ───────────────────────────────────────────────────────────
+
     private ImageIcon loadIcon(String filename, int maxW, int maxH) {
         try {
             java.io.InputStream s = getClass().getResourceAsStream("/GUI/resources/icons/" + filename);
@@ -127,6 +185,7 @@ public class TopBarComponents extends JPanel {
             return null;
         }
     }
+
     // ── Settings / inventory wiring ───────────────────────────────────────────
 
     public void setSettingsPanel(SettingsPanel settings) {

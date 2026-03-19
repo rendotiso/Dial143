@@ -1,69 +1,80 @@
-/*
- * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
- * Click nbfs://nbhost/SystemFileSystem/Templates/GUIForms/JPanel.java to edit this template
- */
 package GUI.panels;
-
+ 
 import GUI.panels.universalComponents.BackgroundLayer;
 import GUI.panels.universalComponents.TopBarComponents;
-import GUI.panels.shopComponents.*;
+import GUI.panels.shopComponents.ShopLayer;
+import GUI.panels.InventoryPanel;
 import java.awt.Dimension;
 import javax.swing.JPanel;
 import javax.swing.OverlayLayout;
-
+ 
 public class ShopPanel extends JPanel {
-    
-    private final MainFrame mainPanel;
-    private BackgroundLayer bg;
+ 
+    private final MainFrame     mainPanel;
+    private final SettingsPanel settings;
+ 
+    private BackgroundLayer  bg;
     private TopBarComponents topBar;
-    private SettingsPanel settings;
-    private ShopLayer shopBox;
-
+    private ShopLayer        shopBox;
+ 
     public ShopPanel(MainFrame mainPanel, SettingsPanel sharedSettings) {
-        this.mainPanel = mainPanel;  
-        this.settings = sharedSettings;
-        
+        this.mainPanel = mainPanel;
+        this.settings  = sharedSettings;
+ 
         setPreferredSize(new Dimension(1280, 720));
         setLayout(new OverlayLayout(this));
         initializeLayers();
     }
-    
+ 
+    // ── Called by MainFrame.showScreen("shop") ────────────────────────────────
+ 
+    public void loadShop() {
+        topBar.setPpValue(mainPanel.getPP());
+        topBar.setLpValue(mainPanel.getLP());
+        topBar.setSalaryValue(mainPanel.getSalary());
+        topBar.setDayInfo(mainPanel.getCurrentDay(), "Shop");
+ 
+        shopBox.setPlayerFunds(mainPanel.getSalary());
+ 
+        shopBox.setOnPurchase((item, cost) -> {
+            // Deduct salary immediately on purchase
+            mainPanel.setSalary(mainPanel.getSalary() - cost);
+            topBar.setSalaryValue(mainPanel.getSalary());
+        });
+ 
+        shopBox.setOnExit(() -> {
+            saveStats();
+            mainPanel.onShopComplete();
+        });
+ 
+        shopBox.load();
+    }
+ 
+    private void saveStats() {
+        mainPanel.setPP(topBar.getCurrentPpValue());
+        mainPanel.setLP(topBar.getCurrentLpValue());
+        mainPanel.setSalary(topBar.getCurrentSalaryValue());
+    }
+ 
+    // ── Layer setup ───────────────────────────────────────────────────────────
+ 
     private void initializeLayers() {
         bg = new BackgroundLayer();
-        bg.setBackgroundFromFile("placeholderBG4.jpg");
-
+        bg.setBackgroundFromFile("ConvenienceStore.jpg");
+ 
         topBar = new TopBarComponents(mainPanel);
-        topBar.setSettingsPanel(settings); 
-        topBar.setParentScreen("shift");
-        
-       InventoryPanel inventory = new InventoryPanel(mainPanel);
+        topBar.setSettingsPanel(settings);
+        topBar.setParentScreen("shop");
+ 
+        InventoryPanel inventory = new InventoryPanel(mainPanel);
         topBar.setInventoryPanel(inventory);
-    
+ 
         shopBox = new ShopLayer();
-    
+ 
         add(topBar);
         add(shopBox);
         add(bg);
-    
     }
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
     
     
     

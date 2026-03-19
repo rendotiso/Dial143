@@ -1,7 +1,3 @@
-/*
- * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
- * Click nbfs://nbhost/SystemFileSystem/Templates/Classes/Class.java to edit this template
- */
 package GUI.panels.universalComponents;
 
 import javax.swing.*;
@@ -69,6 +65,11 @@ public class TransitionLayer extends JPanel {
      * Fades from black back to transparent, then hides the layer.
      */
     public void fadeIn() {
+        fadeIn(null);
+    }
+
+    /** Fade in, then fire onComplete when fully visible. */
+    public void fadeIn(Runnable onComplete) {
         stopTimer();
         alpha  = 1f;
         active = true;
@@ -81,7 +82,8 @@ public class TransitionLayer extends JPanel {
             if (alpha <= 0f) {
                 stopTimer();
                 active = false;
-                setVisible(false); // no longer blocking input
+                setVisible(false);
+                if (onComplete != null) onComplete.run();
             }
         });
         fadeTimer.start();
