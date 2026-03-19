@@ -1,45 +1,47 @@
 package GUI.panels;
-
-import GUI.panels.MainFrame; 
+ 
 import GUI.panels.universalComponents.BackgroundLayer;
 import GUI.panels.titleScreenComponents.*;
-import GUI.panels.MainFrame;
 import javax.swing.*;
 import java.awt.*;
-
-public class TitleScreenPanel extends javax.swing.JPanel  {
-
-    private MainFrame mainPanel;
-
-    private BackgroundLayer bg;
+ 
+public class TitleScreenPanel extends javax.swing.JPanel {
+ 
+    private MainFrame            mainPanel;
+    private BackgroundLayer      bg;
     private TitleScreenComponents buttons;
-
+ 
     public TitleScreenPanel(MainFrame mainPanel) {
         this.mainPanel = mainPanel;
         initComponents();
         initializeLayers();
     }
-
+ 
     private void initializeLayers() {
-        
-            bg = new BackgroundLayer();
-            bg.setBackgroundFromFile("game title bg.png");
+        bg = new BackgroundLayer();
+        bg.setBackgroundFromFile("game title bg.png");
+ 
+        buttons = new TitleScreenComponents();
+        buttons.setTitleImage("gameTitle.png");
+ 
+        buttons.setPlayAction(() -> {
+            mainPanel.resetStats();
+            mainPanel.showScreen("dialogue");
+        });
+ 
+        buttons.setSaveAction(() -> {
+            // Open SavePanel — lets player load a previous save from title screen
+            if (mainPanel.getSavePanel() != null) {
+                mainPanel.showSave("title");
+            }
+        });
+ 
+        buttons.setExitAction(() -> System.exit(0));
+ 
+        add(buttons);
+        add(bg);
+    }
 
-            buttons = new TitleScreenComponents();
-            buttons.setTitleImage("gameTitle.png");
-            buttons.setPlayAction(() -> {mainPanel.resetStats(); mainPanel.showScreen("dialogue");}); 
-            buttons.setSaveAction(() -> { 
-            
-            // EMPTY, NO PLANS YET 
-            
-            });
-            buttons.setExitAction(() -> System.exit(0));
-
-            add(buttons);
-            add(bg);
-   }
-    
-       
      // BELOW IS THE CODE GENERATURED FROM NETBEANS
    
     @SuppressWarnings("unchecked")

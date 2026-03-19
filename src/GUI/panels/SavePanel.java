@@ -1,31 +1,53 @@
-/*
- * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
- * Click nbfs://nbhost/SystemFileSystem/Templates/GUIForms/JPanel.java to edit this template
- */
+
 package GUI.panels;
-
-public class SavePanel extends javax.swing.JPanel {
-
-    public SavePanel() {
-        initComponents();
+ 
+import GUI.panels.universalComponents.BackgroundLayer;
+import GUI.panels.saveComponents.SaveDisplayLayer;
+import java.awt.Dimension;
+import javax.swing.JPanel;
+import javax.swing.OverlayLayout;
+ 
+public class SavePanel extends JPanel {
+ 
+    private final MainFrame mainFrame;
+ 
+    private BackgroundLayer bg;
+    private SaveDisplayLayer       saveLayer;
+    private String          returnScreen = "title";
+ 
+    public SavePanel(MainFrame mainFrame) {
+        this.mainFrame = mainFrame;
+        setPreferredSize(new Dimension(1280, 720));
+        setLayout(new OverlayLayout(this));
+        initializeLayers();
     }
+ 
+    // ── Called by MainFrame.showSave(returnScreen) ────────────────────────────
+ 
+    public void loadSave(String returnScreen) {
+        this.returnScreen = returnScreen;
+        saveLayer.setOnBack(() -> mainFrame.showScreen(returnScreen));
+        saveLayer.refresh();
+    }
+ 
+    // ── Layer setup ───────────────────────────────────────────────────────────
+ 
+    private void initializeLayers() {
+        bg = new BackgroundLayer();
+        bg.setBackgroundFromFile("lightBG.jpg");
+ 
+        saveLayer = new SaveDisplayLayer(mainFrame);
+ 
+        add(saveLayer);
+        add(bg);
+    }
+ 
+    // ── Size overrides ────────────────────────────────────────────────────────
+ 
+    @Override public Dimension getMinimumSize()   { return new Dimension(1280, 720); }
+    @Override public Dimension getMaximumSize()   { return new Dimension(1280, 720); }
+    @Override public Dimension getPreferredSize() { return new Dimension(1280, 720); }
 
-
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
     @SuppressWarnings("unchecked")
     // <editor-fold defaultstate="collapsed" desc="Generated Code">//GEN-BEGIN:initComponents
     private void initComponents() {

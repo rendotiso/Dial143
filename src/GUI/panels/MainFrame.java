@@ -17,6 +17,7 @@ public class MainFrame extends JFrame {
     private ShiftPanel       shiftPanel;
     private ShopPanel        shopPanel;
     private DaySummaryPanel  daySummary;
+    private SavePanel        savePanel;
 
     private TransitionLayer transitionLayer;
 
@@ -72,6 +73,8 @@ public class MainFrame extends JFrame {
     public enum Segment { MORNING, EVENING, ENDING }
     private Segment currentSegment = Segment.MORNING;
     public Segment getCurrentSegment() { return currentSegment; }
+    public void    setCurrentSegment(Segment s) { currentSegment = s; }
+    public SavePanel getSavePanel() { return savePanel; }
 
     // ── Reset ─────────────────────────────────────────────────────────────────
     public void resetStats() {
@@ -97,6 +100,7 @@ public class MainFrame extends JFrame {
                 case "dialogue" -> dialoguePanel.loadContent();
                 case "shift"    -> shiftPanel.loadCall();
                 case "shop"     -> shopPanel.loadShop();
+                case "save"     -> {} // use showSave(returnScreen) instead
                 case "summary"  -> daySummary.loadSummary(
                     sharedPP, sharedLP, sharedSalary,
                     callsCompletedToday,
@@ -199,12 +203,14 @@ public class MainFrame extends JFrame {
         shiftPanel    = new ShiftPanel(this, settingsPanel);
         shopPanel     = new ShopPanel(this, settingsPanel);
         daySummary    = new DaySummaryPanel(this, settingsPanel);
+        savePanel     = new SavePanel(this);
 
         mainContainer.add(titlePanel,    "title");
         mainContainer.add(dialoguePanel, "dialogue");
         mainContainer.add(shiftPanel,    "shift");
         mainContainer.add(shopPanel,     "shop");
         mainContainer.add(daySummary,    "summary");
+        mainContainer.add(savePanel,     "save");
     }
 
     private void setupLayeredContent() {
@@ -221,4 +227,13 @@ public class MainFrame extends JFrame {
 
         setContentPane(layered);
     }
+  
+     public void showSave(String returnScreen) {
+        transitionLayer.fadeOut(() -> {
+            cardLayout.show(mainContainer, "save");
+            savePanel.loadSave(returnScreen);
+            transitionLayer.fadeIn();
+        });
+    }
+  
 }
