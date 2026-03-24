@@ -39,7 +39,7 @@ public class TopBarComponents extends JPanel {
         ppLabel = new JLabel("Performance:");
         ppLabel.setBounds(15, 10, 180, 30);
         ppLabel.setForeground(Color.WHITE);
-        ppLabel.setIcon(loadIcon("performance3.png", 28, 28));
+        ppLabel.setIcon(loadIcon("performance.png", 28, 28));
         ppLabel.setFont(pixelFont != null ? pixelFont.deriveFont(16f) : new Font("Arial", Font.BOLD, 16));
         add(ppLabel);
 
@@ -52,7 +52,7 @@ public class TopBarComponents extends JPanel {
         lpLabel = new JLabel("Love Meter:");
         lpLabel.setBounds(15, 38, 130, 30);
         lpLabel.setForeground(Color.WHITE);
-        lpLabel.setIcon(loadIcon("love meter.png", 28, 28));
+        lpLabel.setIcon(loadIcon("love.png", 28, 28));
         lpLabel.setFont(pixelFont != null ? pixelFont.deriveFont(16f) : new Font("Arial", Font.BOLD, 16));
         add(lpLabel);
 
@@ -65,7 +65,7 @@ public class TopBarComponents extends JPanel {
         salaryLabel = new JLabel("Salary:");
         salaryLabel.setBounds(15, 66, 130, 30);
         salaryLabel.setForeground(Color.WHITE);
-        salaryLabel.setIcon(loadIcon("silverSalary.png", 28, 28));
+        salaryLabel.setIcon(loadIcon("salary.png", 28, 28));
         salaryLabel.setFont(pixelFont != null ? pixelFont.deriveFont(16f) : new Font("Arial", Font.BOLD, 16));
         add(salaryLabel);
 
@@ -112,7 +112,7 @@ public class TopBarComponents extends JPanel {
 
         btnSettings = new JButton();
         btnSettings.setBounds(1180, 15, 100, 35);
-        btnSettings.setIcon(loadIcon("settings icon.png", 80, 35));
+        btnSettings.setIcon(loadIcon("settings.png", 80, 35));
         styleButton(btnSettings);
         add(btnSettings);
 
