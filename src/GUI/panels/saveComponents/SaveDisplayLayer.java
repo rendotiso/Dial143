@@ -1,6 +1,9 @@
 package GUI.panels.saveComponents;
 
 import GUI.panels.MainFrame;
+import Storyline.RouteManager;
+import Storyline.AmayaRoute.AmayaRoute;
+import Entities.Character;
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.*;
@@ -13,7 +16,7 @@ public class SaveDisplayLayer extends JPanel {
 
     private static final int SLOT_COUNT = 6;
 
-    // ── Light theme palette (matching ShopLayer and DaySummaryLayer) ─────────
+    // ── Light theme palette ───────────────────────────────────────────────────
     private static final Color BG_CARD       = Color.WHITE;
     private static final Color BG_SLOT       = new Color(245, 247, 252);
     private static final Color BG_SLOT_HOV   = new Color(238, 242, 250);
@@ -146,15 +149,12 @@ public class SaveDisplayLayer extends JPanel {
                 Graphics2D g2 = (Graphics2D) g.create();
                 g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
                 
-                // Draw shadow
                 g2.setColor(SHADOW_COLOR);
                 g2.fillRoundRect(2, 2, getWidth() - 4, getHeight() - 4, 12, 12);
                 
-                // Draw slot background
                 g2.setColor(hov ? BG_SLOT_HOV : BG_SLOT);
                 g2.fillRoundRect(0, 0, getWidth() - 2, getHeight() - 2, 12, 12);
                 
-                // Draw border
                 g2.setColor(BORDER_COLOR);
                 g2.setStroke(new BasicStroke(1f));
                 g2.drawRoundRect(0, 0, getWidth() - 3, getHeight() - 3, 12, 12);
@@ -162,11 +162,10 @@ public class SaveDisplayLayer extends JPanel {
             }
         };
         row.setOpaque(false);
-        row.setMaximumSize(new Dimension(Integer.MAX_VALUE, 70));  // Reduced from 88 to 70
-        row.setPreferredSize(new Dimension(0, 70));                 // Reduced from 88 to 70
+        row.setMaximumSize(new Dimension(Integer.MAX_VALUE, 70));
+        row.setPreferredSize(new Dimension(0, 70));
         row.setBorder(BorderFactory.createEmptyBorder(10, 22, 10, 18)); 
 
-        // Info
         JPanel info = new JPanel();
         info.setOpaque(false);
         info.setLayout(new BoxLayout(info, BoxLayout.Y_AXIS));
@@ -184,7 +183,7 @@ public class SaveDisplayLayer extends JPanel {
         info.add(metaLabels[index]);
         row.add(info, BorderLayout.CENTER);
 
-        JPanel btnPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 6, 0)); // Reduced horizontal gap from 8 to 6
+        JPanel btnPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 6, 0));
         btnPanel.setOpaque(false);
 
         JButton saveBtn = buildBtn("Save",   ACCENT_BLUE, Color.WHITE, 68, 32);
@@ -240,48 +239,88 @@ public class SaveDisplayLayer extends JPanel {
     private void writeSlot(int slot) {
         Preferences p = prefs();
         String name = mainFrame.getPlayerName();
+        RouteManager rm = mainFrame.getRouteManager();
+
+        // Save display label
         p.put(PREF_KEY + slot, String.format("Day %d  •  %s  •  PP %d  LP %d  ₱%d",
             mainFrame.getCurrentDay(),
             (name == null || name.isEmpty()) ? "???" : name,
             mainFrame.getPP(), mainFrame.getLP(), mainFrame.getSalary()
         ));
+
+        // Save basic stats
         p.putInt(PREF_KEY + slot + "_day",     mainFrame.getCurrentDay());
         p.putInt(PREF_KEY + slot + "_pp",      mainFrame.getPP());
-        p.putInt(PREF_KEY + slot + "_lp",      mainFrame.getLP());
         p.putInt(PREF_KEY + slot + "_salary",  mainFrame.getSalary());
         p.put(   PREF_KEY + slot + "_name",    name != null ? name : "");
         p.put(   PREF_KEY + slot + "_gender",  mainFrame.getPlayerGender()  != null ? mainFrame.getPlayerGender()  : "");
         p.put(   PREF_KEY + slot + "_pronoun", mainFrame.getPlayerPronoun() != null ? mainFrame.getPlayerPronoun() : "");
         p.putInt(PREF_KEY + slot + "_scene",   mainFrame.getDialogueScene());
         p.put(   PREF_KEY + slot + "_segment", mainFrame.getCurrentSegment().name());
+
+        // Save per-character LP using constants from Entities.Character
+        p.putInt(PREF_KEY + slot + "_lp_amaya",   rm.getLPForCharacter(Character.AMAYA));
+        p.putInt(PREF_KEY + slot + "_lp_rosario", rm.getLPForCharacter(Character.ROSARIO));
+        p.putInt(PREF_KEY + slot + "_lp_cloma",   rm.getLPForCharacter(Character.CLOMA));
+        p.putInt(PREF_KEY + slot + "_lp_celeres", rm.getLPForCharacter(Character.CELERES));
+
+        // Save active route info
+        if (rm.hasActiveRoute()) {
+            p.put(PREF_KEY + slot + "_active_char", rm.getActiveCharacter());
+        } else {
+            p.remove(PREF_KEY + slot + "_active_char");
+        }
+
         try { p.flush(); } catch (Exception ignored) {}
     }
 
-    private void readSlot(int slot) {
-        Preferences p = prefs();
-        if (p.get(PREF_KEY + slot, null) == null) return;
-        mainFrame.resetStats();
-        mainFrame.setPP(    p.getInt(PREF_KEY + slot + "_pp",     0));
-        mainFrame.setLP(    p.getInt(PREF_KEY + slot + "_lp",     0));
-        mainFrame.setSalary(p.getInt(PREF_KEY + slot + "_salary", 0));
-        mainFrame.setPlayerIdentity(
-            p.get(PREF_KEY + slot + "_name",    ""),
-            p.get(PREF_KEY + slot + "_gender",  ""),
-            p.get(PREF_KEY + slot + "_pronoun", "")
-        );
-        mainFrame.setDialogueScene(p.getInt(PREF_KEY + slot + "_scene", 0));
-        try {
-            mainFrame.setCurrentSegment(MainFrame.Segment.valueOf(
-                p.get(PREF_KEY + slot + "_segment", "MORNING")));
-        } catch (Exception ignored) {}
-        mainFrame.showScreen("dialogue");
+ private void readSlot(int slot) {
+    Preferences p = prefs();
+    if (p.get(PREF_KEY + slot, null) == null) return;
+
+    mainFrame.resetStats();
+
+    // Restore all stats BEFORE showing any screen
+    mainFrame.setPP(    p.getInt(PREF_KEY + slot + "_pp",     0));
+    mainFrame.setSalary(p.getInt(PREF_KEY + slot + "_salary", 0));
+    mainFrame.setCurrentDay(p.getInt(PREF_KEY + slot + "_day", 1));  // ← was missing
+    mainFrame.setPlayerIdentity(
+        p.get(PREF_KEY + slot + "_name",    ""),
+        p.get(PREF_KEY + slot + "_gender",  ""),
+        p.get(PREF_KEY + slot + "_pronoun", "")
+    );
+    mainFrame.setDialogueScene(p.getInt(PREF_KEY + slot + "_scene", 0));
+
+    try {
+        mainFrame.setCurrentSegment(MainFrame.Segment.valueOf(
+            p.get(PREF_KEY + slot + "_segment", "MORNING")));
+    } catch (Exception ignored) {}
+
+    // Restore per-character LP
+    RouteManager rm = mainFrame.getRouteManager();
+    mainFrame.setLPForCharacter(Character.AMAYA,   p.getInt(PREF_KEY + slot + "_lp_amaya",   0));
+    mainFrame.setLPForCharacter(Character.ROSARIO, p.getInt(PREF_KEY + slot + "_lp_rosario", 0));
+    mainFrame.setLPForCharacter(Character.CLOMA,   p.getInt(PREF_KEY + slot + "_lp_cloma",   0));
+    mainFrame.setLPForCharacter(Character.CELERES, p.getInt(PREF_KEY + slot + "_lp_celeres", 0));
+
+    // Restore active route
+    String activeChar = p.get(PREF_KEY + slot + "_active_char", null);
+    if (activeChar != null && !activeChar.isEmpty()) {
+        RouteManager route = routeForCharacter(activeChar);
+        rm.selectRoute(route, activeChar);
     }
 
+    mainFrame.showScreen("dialogue");
+}
+ 
     private void deleteSlot(int slot) {
         Preferences p = prefs();
-        for (String k : new String[]{ "", "_day", "_pp", "_lp", "_salary",
-                                      "_name", "_gender", "_pronoun", "_scene", "_segment" })
+        String[] keys = { "", "_day", "_pp", "_lp", "_salary", "_name", "_gender", 
+                          "_pronoun", "_scene", "_segment", "_lp_amaya", "_lp_rosario", 
+                          "_lp_cloma", "_lp_celeres", "_active_char" };
+        for (String k : keys) {
             p.remove(PREF_KEY + slot + k);
+        }
         try { p.flush(); } catch (Exception ignored) {}
     }
 
@@ -289,57 +328,63 @@ public class SaveDisplayLayer extends JPanel {
         return prefs().get(PREF_KEY + slot, null);
     }
 
+    // ── Helper method for route creation ──────────────────────────────────────
+    private RouteManager routeForCharacter(String name) {
+        if (name == null) return new AmayaRoute();
+        return switch (name) {
+            case Character.AMAYA -> new AmayaRoute();
+            // case Character.ROSARIO -> new RosarioRoute();
+            // case Character.CLOMA -> new ClomaRoute();
+            // case Character.CELERES -> new CeleresRoute();
+            default -> new AmayaRoute();
+        };
+    }
+
     // ── Button factory ────────────────────────────────────────────────────────
 
-        private JButton buildBtn(String text, Color bgColor, Color fgColor, int w, int h) {
-            JButton btn = new JButton(text) {
-                private boolean hov = false;
-                { addMouseListener(new MouseAdapter() {
-                    public void mouseEntered(MouseEvent e) { hov = true;  repaint(); }
-                    public void mouseExited (MouseEvent e) { hov = false; repaint(); }
-                }); }
-                @Override protected void paintComponent(Graphics g) {
-                    Graphics2D g2 = (Graphics2D) g.create();
-                    g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+    private JButton buildBtn(String text, Color bgColor, Color fgColor, int w, int h) {
+        JButton btn = new JButton(text) {
+            private boolean hov = false;
+            { addMouseListener(new MouseAdapter() {
+                public void mouseEntered(MouseEvent e) { hov = true;  repaint(); }
+                public void mouseExited (MouseEvent e) { hov = false; repaint(); }
+            }); }
+            @Override protected void paintComponent(Graphics g) {
+                Graphics2D g2 = (Graphics2D) g.create();
+                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
 
-                    // Draw shadow (reduced offset)
-                    g2.setColor(SHADOW_COLOR);
-                    g2.fillRoundRect(1, 1, getWidth() - 2, getHeight() - 2, 6, 6);
+                g2.setColor(SHADOW_COLOR);
+                g2.fillRoundRect(1, 1, getWidth() - 2, getHeight() - 2, 6, 6);
 
-                    // Draw button background
-                    Color c = !isEnabled() ? BG_SLOT
-                            : hov          ? bgColor.brighter()
-                            :                bgColor;
-                    g2.setColor(c);
-                    g2.fillRoundRect(0, 0, getWidth(), getHeight(), 6, 6);
+                Color c = !isEnabled() ? BG_SLOT
+                        : hov          ? bgColor.brighter()
+                        :                bgColor;
+                g2.setColor(c);
+                g2.fillRoundRect(0, 0, getWidth(), getHeight(), 6, 6);
 
-                    // Draw text with better vertical centering
-                    g2.setColor(!isEnabled() ? TEXT_MUTED : hov ? Color.WHITE : fgColor);
-                    g2.setFont(getFont());
-                    FontMetrics fm = g2.getFontMetrics();
+                g2.setColor(!isEnabled() ? TEXT_MUTED : hov ? Color.WHITE : fgColor);
+                g2.setFont(getFont());
+                FontMetrics fm = g2.getFontMetrics();
 
-                    // Calculate exact vertical center
-                    int textX = (getWidth() - fm.stringWidth(getText())) / 2;
-                    int textY = (getHeight() - fm.getHeight()) / 2 + fm.getAscent();
+                int textX = (getWidth() - fm.stringWidth(getText())) / 2;
+                int textY = (getHeight() - fm.getHeight()) / 2 + fm.getAscent();
 
-                    g2.drawString(getText(), textX, textY);
-                    g2.dispose();
-                }
-            };
-            btn.setFont(btnFont);
-            btn.setPreferredSize(new Dimension(w, h));
-            btn.setMaximumSize(new Dimension(w, h)); // Add maximum size constraint
-            btn.setMinimumSize(new Dimension(w, h)); // Add minimum size constraint
-            btn.setContentAreaFilled(false);
-            btn.setBorderPainted(false);
-            btn.setFocusPainted(false);
-            btn.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+                g2.drawString(getText(), textX, textY);
+                g2.dispose();
+            }
+        };
+        btn.setFont(btnFont);
+        btn.setPreferredSize(new Dimension(w, h));
+        btn.setMaximumSize(new Dimension(w, h));
+        btn.setMinimumSize(new Dimension(w, h));
+        btn.setContentAreaFilled(false);
+        btn.setBorderPainted(false);
+        btn.setFocusPainted(false);
+        btn.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+        btn.setMargin(new Insets(0, 4, 0, 4));
 
-            // Add margin to reduce button height perception
-            btn.setMargin(new Insets(0, 4, 0, 4));
-
-            return btn;
-        }
+        return btn;
+    }
 
     // ── Fonts ─────────────────────────────────────────────────────────────────
 

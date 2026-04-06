@@ -32,6 +32,7 @@ public class DaySummaryPanel extends JPanel {
         topBar.setLpValue(mainPanel.getLP());
         topBar.setSalaryValue(mainPanel.getSalary());
         topBar.setDayInfo(mainPanel.getCurrentDay(), "Day Summary"); // This shows "Day X | Day Summary"
+        topBar.updateForSummary(mainPanel.getCurrentDay());
 
         summaryLayer.load(
             mainPanel.getCurrentDay(),
@@ -45,7 +46,7 @@ public class DaySummaryPanel extends JPanel {
 
     private void initializeLayers() {
         bg = new BackgroundLayer();
-        bg.setBackgroundFromFile("blackBG.jpg");
+        bg.setBackgroundFromFile("lightBG.jpg");
 
         topBar = new TopBarComponents(mainPanel);
         topBar.setSettingsPanel(settings);

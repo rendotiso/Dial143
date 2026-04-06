@@ -1,23 +1,15 @@
-/*
- * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
- * Click nbfs://nbhost/SystemFileSystem/Templates/Classes/Class.java to edit this template
- */
 package Entities;
-
 import javax.swing.ImageIcon;
 
-/**
- * Represents a usable item in the game.
- * Reusable across Inventory and Shop systems.
- */
 public class Item {
-
     private String name;
     private String description;
-    private String iconPath;     // resource path e.g. "/GUI/resources/items/coffee.png"
+    private String iconPath;
     private int    quantity;
-    private int    price;        // for Shop use
+    private int    price;
     private ItemType type;
+    private EffectType effectType;
+    private int    effectValue;
 
     public enum ItemType {
         CONSUMABLE,
@@ -25,58 +17,68 @@ public class Item {
         SPECIAL
     }
 
+    public enum EffectType {
+        PP_MULTIPLIER,      // % boost to PP earned (Coffee)
+        HINT_PER_CALL,      // reveals best option once per call (Sticky Note)
+        TIMER_BOOST,        // adds seconds to call timer (Clock)
+        LP_FLAT,            // flat LP gain on use (Chocolate, Book)
+        LP_MULTIPLIER_DAILY,// passive % LP per day (Desk Plant)
+        NONE
+    }
+
     // Full constructor
-    public Item(String name, String description, String iconPath, int quantity, int price, ItemType type) {
+    public Item(String name, String description, String iconPath,
+                int quantity, int price, ItemType type,
+                EffectType effectType, int effectValue) {
         this.name        = name;
         this.description = description;
         this.iconPath    = iconPath;
         this.quantity    = quantity;
         this.price       = price;
         this.type        = type;
+        this.effectType  = effectType;
+        this.effectValue = effectValue;
     }
 
-    // Convenience constructor (no price - inventory only)
+    // Backwards-compatible constructor (no effect)
+    public Item(String name, String description, String iconPath,
+                int quantity, int price, ItemType type) {
+        this(name, description, iconPath, quantity, price, type, EffectType.NONE, 0);
+    }
+
+    // Inventory-only convenience constructor
     public Item(String name, String description, String iconPath, int quantity) {
-        this(name, description, iconPath, quantity, 0, ItemType.CONSUMABLE);
+        this(name, description, iconPath, quantity, 0, ItemType.CONSUMABLE, EffectType.NONE, 0);
     }
 
-    // ── Getters ──────────────────────────────────────────────────────────────
+    // ── Getters ───────────────────────────────────────────────────────────────
+    public String     getName()        { return name; }
+    public String     getDescription() { return description; }
+    public String     getIconPath()    { return iconPath; }
+    public int        getQuantity()    { return quantity; }
+    public int        getPrice()       { return price; }
+    public ItemType   getType()        { return type; }
+    public EffectType getEffectType()  { return effectType; }
+    public int        getEffectValue() { return effectValue; }
+    public boolean    hasStock()       { return quantity > 0; }
 
-    public String   getName()        { return name; }
-    public String   getDescription() { return description; }
-    public String   getIconPath()    { return iconPath; }
-    public int      getQuantity()    { return quantity; }
-    public int      getPrice()       { return price; }
-    public ItemType getType()        { return type; }
-    public boolean  hasStock()       { return quantity > 0; }
-
-    // ── Setters ──────────────────────────────────────────────────────────────
-
+    // ── Setters ───────────────────────────────────────────────────────────────
     public void setName(String name)               { this.name = name; }
-    public void setDescription(String description) { this.description = description; }
-    public void setIconPath(String iconPath)       { this.iconPath = iconPath; }
-    public void setQuantity(int quantity)          { this.quantity = Math.max(0, quantity); }
+    public void setDescription(String d)           { this.description = d; }
+    public void setIconPath(String p)              { this.iconPath = p; }
+    public void setQuantity(int q)                 { this.quantity = Math.max(0, q); }
     public void setPrice(int price)                { this.price = price; }
     public void setType(ItemType type)             { this.type = type; }
 
     // ── Helpers ───────────────────────────────────────────────────────────────
-
-    /** Use one unit of the item. Returns true if successful, false if out of stock. */
     public boolean use() {
         if (quantity <= 0) return false;
         quantity--;
         return true;
     }
 
-    /** Add quantity (for shop purchases). */
-    public void addQuantity(int amount) {
-        this.quantity += amount;
-    }
+    public void addQuantity(int amount) { this.quantity += amount; }
 
-    /**
-     * Attempts to load the icon as an ImageIcon scaled to the given size.
-     * Returns null if the resource is not found (caller should show placeholder).
-     */
     public ImageIcon getIcon(int width, int height) {
         try {
             java.io.InputStream stream = getClass().getResourceAsStream(iconPath);

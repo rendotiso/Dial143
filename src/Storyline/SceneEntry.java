@@ -10,6 +10,7 @@ public class SceneEntry {
     public static final String TYPE_CHOICE   = "CHOICE";
     public static final String TYPE_IDENTITY = "IDENTITY_CREATION";
     public static final String TYPE_NARRATOR = "NARRATOR";
+    public static final String TYPE_ROUTE    = "ROUTE";
 
     public final String type;
     public final String speaker;
@@ -41,5 +42,9 @@ public class SceneEntry {
 
     public static SceneEntry identityCreation() {
         return new SceneEntry(TYPE_IDENTITY, "", "", "", "");
+    }
+    
+    public static SceneEntry routeSelection() {
+        return new SceneEntry(TYPE_ROUTE, "", "", "", "");
     }
 }

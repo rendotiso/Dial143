@@ -1,7 +1,3 @@
-/*
- * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
- * Click nbfs://nbhost/SystemFileSystem/Templates/GUIForms/JPanel.java to edit this template
- */
 package GUI.panels;
 
 import javax.swing.*;
@@ -26,10 +22,9 @@ public class InventoryPanel extends JPanel {
     private JPanel    gridPanel;
     private ItemLayer detailPanel;
 
-    private Runnable onInventoryOpening;
-    private Runnable onInventoryClosed;
-
-    // ── Constructor ───────────────────────────────────────────────────────────
+    private Runnable                   onInventoryOpening;
+    private Runnable                   onInventoryClosed;
+    private ItemLayer.ItemEffectListener onItemEffect;
 
     public InventoryPanel(JFrame owner) {
         this.owner       = owner;
@@ -39,23 +34,30 @@ public class InventoryPanel extends JPanel {
         buildUI();
     }
 
-    // ── Callbacks (for pause/resume) ──────────────────────────────────────────
+    public void onInventoryOpening(Runnable callback)            { this.onInventoryOpening = callback; }
+    public void onInventoryClosed(Runnable callback)             { this.onInventoryClosed  = callback; }
+    public void setOnItemEffect(ItemLayer.ItemEffectListener l)  { this.onItemEffect       = l; }
 
-    public void onInventoryOpening(Runnable callback) { this.onInventoryOpening = callback; }
-    public void onInventoryClosed(Runnable callback)  { this.onInventoryClosed  = callback; }
-
-    // ── Public API ────────────────────────────────────────────────────────────
-
-    public void setItems(List<Item> items) {
+    public void setItems(List<Item> newItems) {
         this.items.clear();
-        this.items.addAll(items);
+        this.items.addAll(newItems);
         refreshGrid();
     }
 
     public void addItem(Item item) {
+        // If item already exists by name, just increment quantity
+        for (Item existing : items) {
+            if (existing.getName().equals(item.getName())) {
+                existing.addQuantity(item.getQuantity());
+                refreshGrid();
+                return;
+            }
+        }
         items.add(item);
         refreshGrid();
     }
+
+    public List<Item> getItems() { return items; }
 
     public void showAsPopup() {
         if (onInventoryOpening != null) onInventoryOpening.run();
@@ -73,9 +75,8 @@ public class InventoryPanel extends JPanel {
             }
         });
         dialog.setFocusable(true);
-        dialog.setVisible(true); // APPLICATION_MODAL — blocks here until closed
+        dialog.setVisible(true);
 
-        // Runs exactly when dialog closes
         if (onInventoryClosed != null) onInventoryClosed.run();
     }
 
@@ -85,8 +86,6 @@ public class InventoryPanel extends JPanel {
             dialog = null;
         }
     }
-
-    // ── UI Construction ───────────────────────────────────────────────────────
 
     private void buildUI() {
         setLayout(new BorderLayout());
@@ -100,19 +99,16 @@ public class InventoryPanel extends JPanel {
         wrapper.setOpaque(true);
         wrapper.setBorder(BorderFactory.createEmptyBorder(24, 28, 20, 28));
 
-        // ── Title ──
         JLabel title = new JLabel("INVENTORY", SwingConstants.CENTER);
         title.setForeground(Color.BLACK);
         title.setFont(loadFont(22f, Font.BOLD));
         wrapper.add(title, BorderLayout.NORTH);
 
-        // ── Grid ──
         gridPanel = new JPanel(new GridLayout(ROWS, COLS, 14, 14));
         gridPanel.setOpaque(false);
         refreshGrid();
         wrapper.add(gridPanel, BorderLayout.CENTER);
 
-        // ── Exit button ──
         JButton btnExit = makeButton("EXIT", new Color(60, 65, 80), new Color(100, 105, 120));
         btnExit.setPreferredSize(new Dimension(120, 36));
         btnExit.addActionListener(e -> hidePopup());
@@ -129,17 +125,13 @@ public class InventoryPanel extends JPanel {
     private void refreshGrid() {
         if (gridPanel == null) return;
         gridPanel.removeAll();
-
         for (int i = 0; i < MAX_SLOTS; i++) {
             if (i < items.size()) gridPanel.add(makeItemSlot(items.get(i)));
             else                  gridPanel.add(makeEmptySlot());
         }
-
         gridPanel.revalidate();
         gridPanel.repaint();
     }
-
-    // ── Slot Factories ────────────────────────────────────────────────────────
 
     private JPanel makeItemSlot(Item item) {
         JPanel slot = new JPanel(new BorderLayout(0, 4)) {
@@ -149,7 +141,7 @@ public class InventoryPanel extends JPanel {
                 setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
                 addMouseListener(new MouseAdapter() {
                     public void mouseEntered(MouseEvent e) { hovered = true;  repaint(); }
-                    public void mouseExited(MouseEvent e)  { hovered = false; repaint(); }
+                    public void mouseExited (MouseEvent e) { hovered = false; repaint(); }
                     public void mouseClicked(MouseEvent e) { openDetail(item); }
                 });
             }
@@ -161,7 +153,6 @@ public class InventoryPanel extends JPanel {
         };
         slot.setBorder(BorderFactory.createEmptyBorder(8, 8, 6, 8));
 
-        // Icon area
         JLabel iconLabel = new JLabel("", SwingConstants.CENTER) {
             @Override protected void paintComponent(Graphics g) {
                 if (getIcon() == null) {
@@ -171,7 +162,8 @@ public class InventoryPanel extends JPanel {
                     g.setFont(new Font("Arial", Font.PLAIN, 9));
                     FontMetrics fm = g.getFontMetrics();
                     String t = "ICON";
-                    g.drawString(t, (getWidth() - fm.stringWidth(t)) / 2, getHeight() / 2 + fm.getAscent() / 2 - 2);
+                    g.drawString(t, (getWidth() - fm.stringWidth(t)) / 2,
+                                    getHeight() / 2 + fm.getAscent() / 2 - 2);
                 } else {
                     super.paintComponent(g);
                 }
@@ -181,14 +173,13 @@ public class InventoryPanel extends JPanel {
         iconLabel.setIcon(item.getIcon(56, 56));
         iconLabel.setOpaque(false);
 
-        // Name label
         JLabel nameLabel = new JLabel(item.getName(), SwingConstants.CENTER);
         nameLabel.setForeground(Color.DARK_GRAY);
         nameLabel.setFont(loadFont(11f, Font.PLAIN));
 
-        // Quantity badge
         JLabel qtyLabel = new JLabel("x" + item.getQuantity(), SwingConstants.CENTER);
-        qtyLabel.setForeground(item.hasStock() ? new Color(30, 140, 60) : new Color(180, 40, 40));
+        qtyLabel.setForeground(item.hasStock()
+            ? new Color(30, 140, 60) : new Color(180, 40, 40));
         qtyLabel.setFont(loadFont(11f, Font.BOLD));
 
         JPanel south = new JPanel(new GridLayout(2, 1, 0, 1));
@@ -198,7 +189,6 @@ public class InventoryPanel extends JPanel {
 
         slot.add(iconLabel, BorderLayout.CENTER);
         slot.add(south,     BorderLayout.SOUTH);
-
         return slot;
     }
 
@@ -214,37 +204,36 @@ public class InventoryPanel extends JPanel {
         return slot;
     }
 
-    // ── Detail popup ──────────────────────────────────────────────────────────
-
     private void openDetail(Item item) {
         detailPanel.setItem(item);
         detailPanel.onItemUsed(this::refreshGrid);
-        detailPanel.showAsPopup(owner); 
+        detailPanel.setOnEffect((effectType, effectValue) -> {
+            if (onItemEffect != null) onItemEffect.onEffect(effectType, effectValue);
+        });
+        detailPanel.showAsPopup(owner);
         refreshGrid();
     }
 
-    // ── Helpers ───────────────────────────────────────────────────────────────
-
     private JButton makeButton(String text, Color bg, Color hover) {
         JButton btn = new JButton(text) {
-            private Color currentBg = bg;
+            private Color cur = bg;
             {
                 addMouseListener(new MouseAdapter() {
-                    public void mouseEntered(MouseEvent e) { currentBg = hover; repaint(); }
-                    public void mouseExited(MouseEvent e)  { currentBg = bg;    repaint(); }
+                    public void mouseEntered(MouseEvent e) { cur = hover; repaint(); }
+                    public void mouseExited (MouseEvent e) { cur = bg;    repaint(); }
                 });
             }
             @Override protected void paintComponent(Graphics g) {
                 Graphics2D g2 = (Graphics2D) g.create();
                 g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-                g2.setColor(currentBg);
+                g2.setColor(cur);
                 g2.fillRoundRect(0, 0, getWidth(), getHeight(), 10, 10);
                 g2.setColor(Color.WHITE);
                 g2.setFont(getFont());
                 FontMetrics fm = g2.getFontMetrics();
                 g2.drawString(getText(),
-                        (getWidth()  - fm.stringWidth(getText())) / 2,
-                        (getHeight() + fm.getAscent() - fm.getDescent()) / 2);
+                    (getWidth()  - fm.stringWidth(getText())) / 2,
+                    (getHeight() + fm.getAscent() - fm.getDescent()) / 2);
                 g2.dispose();
             }
         };
@@ -259,17 +248,17 @@ public class InventoryPanel extends JPanel {
 
     private Font loadFont(float size, int style) {
         try {
-            java.io.InputStream s = getClass().getResourceAsStream("/GUI/resources/font/Mulish-VariableFont_wght.ttf");
+            java.io.InputStream s = getClass().getResourceAsStream(
+                "/GUI/resources/font/Mulish-VariableFont_wght.ttf");
             if (s != null) return Font.createFont(Font.TRUETYPE_FONT, s).deriveFont(style, size);
         } catch (Exception ignored) {}
         return new Font("Arial", style, (int) size);
     }
 
-    
-    
-    
-    
-    
+    @Override public Dimension getMinimumSize()   { return new Dimension(540, 500); }
+    @Override public Dimension getMaximumSize()   { return new Dimension(540, 500); }
+    @Override public Dimension getPreferredSize() { return new Dimension(540, 500); }
+
     
     
     /**

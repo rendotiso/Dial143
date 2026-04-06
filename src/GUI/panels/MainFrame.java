@@ -2,10 +2,12 @@ package GUI.panels;
 
 import java.awt.*;
 import java.awt.CardLayout;
+import Entities.ActiveEffects;
 import Entities.Player;
 import javax.swing.*;
 import GUI.panels.universalComponents.TransitionLayer;
 import Storyline.*;
+import Storyline.AmayaRoute.AmayaRoute;
 
 public class MainFrame extends JFrame {
 
@@ -19,9 +21,13 @@ public class MainFrame extends JFrame {
     private ShopPanel        shopPanel;
     private DaySummaryPanel  daySummary;
     private SavePanel        savePanel;
-    private TransitionLayer transitionLayer;
+    private TransitionLayer  transitionLayer;
 
-    // ── Shift start snapshots (for "gained this shift" calculation) ───────────
+    // ── Route manager (handles both LP tracking AND active route) ─────────────
+    private final RouteManager routeManager = new AmayaRoute(); // Default placeholder
+    public RouteManager getRouteManager() { return routeManager; }
+
+    // ── Shift start snapshots ─────────────────────────────────────────────────
     private int ppAtShiftStart;
     private int lpAtShiftStart;
     private int salaryAtShiftStart;
@@ -38,17 +44,64 @@ public class MainFrame extends JFrame {
         playerProfile.set(name, gender, pronoun);
     }
 
-    // ── Shared stats ──────────────────────────────────────────────────────────
+    
+    private final ActiveEffects activeEffects = new ActiveEffects();
+public ActiveEffects getActiveEffects() { return activeEffects; }
+
+
+    // ── Shared stats (PP and Salary are global) ───────────────────────────────
     private int sharedPP     = 0;
-    private int sharedLP     = 0;
     private int sharedSalary = 0;
 
     public int  getPP()          { return sharedPP; }
-    public int  getLP()          { return sharedLP; }
     public int  getSalary()      { return sharedSalary; }
-    public void setPP(int v)     { sharedPP     = v; }
-    public void setLP(int v)     { sharedLP     = v; }
+    public void setPP(int v)     { sharedPP = v; }
     public void setSalary(int v) { sharedSalary = v; }
+    
+    // ── LP delegates to RouteManager ──────────────────────────────────────────
+    
+    /** Get current LP - returns active route's LP or 0 if no route active */
+    public int getLP() {
+        if (routeManager.hasActiveRoute()) {
+            return routeManager.getActiveLP();
+        }
+        // Before route selection, return the total of all character LP? 
+        // For save/load, we need to store per-character
+        return 0;
+    }
+    
+    /** Set LP for the active route character */
+    public void setLP(int v) {
+        if (routeManager.hasActiveRoute()) {
+            String activeChar = routeManager.getActiveCharacter();
+            int current = routeManager.getLPForCharacter(activeChar);
+            int diff = v - current;
+            if (diff != 0) {
+                routeManager.addCharacterLP(activeChar, diff);
+            }
+        }
+    }
+    
+    /** Add LP to active route */
+    public void addLP(int amount) {
+        if (routeManager.hasActiveRoute()) {
+            routeManager.addCharacterLP(routeManager.getActiveCharacter(), amount);
+        }
+    }
+    
+    /** Get LP for a specific character (used by save/load) */
+    public int getLPForCharacter(String character) {
+        return routeManager.getLPForCharacter(character);
+    }
+    
+    /** Set LP for a specific character (used by save/load) */
+    public void setLPForCharacter(String character, int value) {
+        int current = routeManager.getLPForCharacter(character);
+        int diff = value - current;
+        if (diff != 0) {
+            routeManager.addCharacterLP(character, diff);
+        }
+    }
 
     // ── Day / call progress ───────────────────────────────────────────────────
     private int currentDay          = 1;
@@ -57,6 +110,7 @@ public class MainFrame extends JFrame {
     public static final int TOTAL_DAYS    = 7;
 
     public int  getCurrentDay()           { return currentDay; }
+    public void setCurrentDay(int day) { this.currentDay = day; }
     public int  getCallsCompleted()       { return callsCompletedToday; }
     public void incrementCallsCompleted() { callsCompletedToday++; }
 
@@ -72,14 +126,13 @@ public class MainFrame extends JFrame {
     // ── Segment tracking ──────────────────────────────────────────────────────
     public enum Segment { MORNING, EVENING, ENDING }
     private Segment currentSegment = Segment.MORNING;
-    public Segment getCurrentSegment()      { return currentSegment; }
-    public void    setCurrentSegment(Segment s) { currentSegment = s; }
-    public SavePanel getSavePanel()         { return savePanel; }
+    public Segment  getCurrentSegment()         { return currentSegment; }
+    public void     setCurrentSegment(Segment s){ currentSegment = s; }
+    public SavePanel getSavePanel()             { return savePanel; }
 
     // ── Reset ─────────────────────────────────────────────────────────────────
     public void resetStats() {
         sharedPP            = 0;
-        sharedLP            = 0;
         sharedSalary        = 0;
         currentDay          = 1;
         callsCompletedToday = 0;
@@ -90,6 +143,8 @@ public class MainFrame extends JFrame {
         ppAtShiftStart      = 0;
         lpAtShiftStart      = 0;
         salaryAtShiftStart  = 0;
+        routeManager.reset();
+        activeEffects.reset();
     }
 
     // ── Screen routing ────────────────────────────────────────────────────────
@@ -100,12 +155,11 @@ public class MainFrame extends JFrame {
                 case "dialogue" -> dialoguePanel.loadContent();
                 case "shift"    -> shiftPanel.loadCall();
                 case "shop"     -> shopPanel.loadShop();
-                case "save"     -> {} // use showSave(returnScreen) instead
+                case "save"     -> {}
                 case "summary"  -> daySummary.loadSummary(
-                    // CORRECT ORDER: ppGained, lpGained, salaryGained, callsDone
-                    sharedPP - ppAtShiftStart,      // pp gained this shift
-                    sharedLP - lpAtShiftStart,      // lp gained this shift  
-                    sharedSalary - salaryAtShiftStart, // salary gained this shift
+                    sharedPP     - ppAtShiftStart,
+                    getLP()      - lpAtShiftStart,
+                    sharedSalary - salaryAtShiftStart,
                     callsCompletedToday,
                     () -> onEndDay(),
                     () -> showScreen("shop")
@@ -114,11 +168,12 @@ public class MainFrame extends JFrame {
             transitionLayer.fadeIn();
         });
     }
+
     // ── Game flow callbacks ───────────────────────────────────────────────────
 
     public void onMorningComplete() {
         ppAtShiftStart      = sharedPP;
-        lpAtShiftStart      = sharedLP;
+        lpAtShiftStart      = getLP();
         salaryAtShiftStart  = sharedSalary;
         callsCompletedToday = 0;
         showScreen("shift");
@@ -132,38 +187,29 @@ public class MainFrame extends JFrame {
     }
 
     public void onEveningComplete() {
-        showDaySummary();
-    }
-
-    private void showDaySummary() {
         showScreen("summary");
     }
 
     public void onShopComplete() {
-        showDaySummary();
+        showScreen("summary");
     }
 
     public void onEndDay() {
         if (currentDay >= TOTAL_DAYS) {
-            // Final day done — play ending
             currentSegment = Segment.ENDING;
-            dialogueScene = 0;
-            dialogueDone = false;
+            dialogueScene  = 0;
+            dialogueDone   = false;
             showScreen("dialogue");
         } else {
-            // Advance to the next day
+            activeEffects.resetPerDay();
             currentDay++;
             callsCompletedToday = 0;
-            dialogueScene = 0;
-            dialogueDone = false;
-            currentSegment = Segment.MORNING;
-
-            // Reset shift start snapshots for the new day
-            ppAtShiftStart = sharedPP;
-            lpAtShiftStart = sharedLP;
-            salaryAtShiftStart = sharedSalary;
-
-            // Load the correct day script
+            dialogueScene       = 0;
+            dialogueDone        = false;
+            currentSegment      = Segment.MORNING;
+            ppAtShiftStart      = sharedPP;
+            lpAtShiftStart      = getLP();
+            salaryAtShiftStart  = sharedSalary;
             dialoguePanel.setDayScript(scriptForDay(currentDay));
             showScreen("dialogue");
         }
@@ -174,17 +220,17 @@ public class MainFrame extends JFrame {
         showScreen("title");
     }
 
-    /**
-     * Returns the correct DayScript for a given day number.
-     * Add a new case here whenever you add a new DayNScript class.
-     */
-    private DayInterface scriptForDay(int day) {
-        return switch (day) {
-            case 1  -> new Day1();
-            case 2  -> new Day2();
-            // case 3  -> new Day3();
-            default -> new Day1(); // fallback
-        };
+
+    public DayInterface scriptForDay(int day) {
+        if (day == 1) return new Day1();
+        if (day == 2) return new Day2();
+        if (day == 3) return new Day3();
+
+        if (routeManager.hasActiveRoute()) {
+            return routeManager.getActiveRoute().getDayScript(day);
+        }
+
+        return new Day3();
     }
 
     // ── Constructor ───────────────────────────────────────────────────────────
@@ -204,8 +250,6 @@ public class MainFrame extends JFrame {
         setLocation((screen.width - getWidth()) / 2, (screen.height - getHeight()) / 2);
         cardLayout.show(mainContainer, "title");
     }
-
-    // ── Panel setup ───────────────────────────────────────────────────────────
 
     private void panelObjects() {
         cardLayout    = new CardLayout();

@@ -26,6 +26,9 @@ public class TopBarComponents extends JPanel {
     private javax.swing.JLabel  salaryLabel;
     private javax.swing.JLabel  salaryValue;
     private javax.swing.JLabel  dayLabel;
+    
+    // ── Love Meter visibility flag ───────────────────────────────────────────
+    private boolean loveMeterVisible = false;
 
     public TopBarComponents(MainFrame mainFrame) {
         this.mainFrame = mainFrame;
@@ -49,17 +52,20 @@ public class TopBarComponents extends JPanel {
         ppValue.setFont(pixelFont != null ? pixelFont.deriveFont(18f) : new Font("Arial", Font.BOLD, 18));
         add(ppValue);
 
+        // Love Meter components - initially invisible
         lpLabel = new JLabel("Love Meter:");
         lpLabel.setBounds(15, 38, 130, 30);
         lpLabel.setForeground(Color.WHITE);
         lpLabel.setIcon(loadIcon("love.png", 28, 28));
         lpLabel.setFont(pixelFont != null ? pixelFont.deriveFont(16f) : new Font("Arial", Font.BOLD, 16));
+        lpLabel.setVisible(false);
         add(lpLabel);
 
         lpValue = new JLabel("0");
         lpValue.setBounds(160, 38, 60, 30);
         lpValue.setForeground(Color.WHITE);
         lpValue.setFont(pixelFont != null ? pixelFont.deriveFont(18f) : new Font("Arial", Font.BOLD, 18));
+        lpValue.setVisible(false);
         add(lpValue);
 
         salaryLabel = new JLabel("Salary:");
@@ -125,9 +131,71 @@ public class TopBarComponents extends JPanel {
         setComponentZOrder(btnSettings,  6);
     }
 
-    // ── Day label API ─────────────────────────────────────────────────────────
+    // ── Love Meter Visibility Control ─────────────────────────────────────────
+    
+    /**
+     * Show or hide the Love Meter (LP) components.
+     * Love Meter should only appear starting from Day 3 Evening (when character route begins).
+     * 
+     * @param visible true to show Love Meter, false to hide it
+     */
+    public void setLoveMeterVisible(boolean visible) {
+        this.loveMeterVisible = visible;
+        lpLabel.setVisible(visible);
+        lpValue.setVisible(visible);
+        
+        // Adjust the Y positions of salary components based on Love Meter visibility
+        if (visible) {
+            // Love Meter is visible - salary stays at Y=66
+            salaryLabel.setBounds(15, 66, 130, 30);
+            salaryValue.setBounds(160, 66, 60, 30);
+        } else {
+            // Love Meter is hidden - salary moves up to Y=38 to fill the gap
+            salaryLabel.setBounds(15, 38, 130, 30);
+            salaryValue.setBounds(160, 38, 60, 30);
+        }
+        
+        // Force repaint of the background gradient area
+        repaint();
+    }
+    
+    /**
+     * Check if Love Meter is currently visible
+     */
+    public boolean isLoveMeterVisible() {
+        return loveMeterVisible;
+    }
+    
+    /**
+     * Auto-detect whether Love Meter should be visible based on current day and segment.
+     * Call this when loading a new scene.
+     * 
+     * @param currentDay the current game day (1-7)
+     * @param segment the current game segment (MORNING, EVENING, ENDING)
+     */
+    public void updateLoveMeterVisibility(int currentDay, MainFrame.Segment segment) {
+        // Love Meter appears starting Day 3 Evening
+        // Day 1-2: No Love Meter (prologue, no route active)
+        // Day 3 Morning: Still no Love Meter (route hasn't started yet)
+        // Day 3 Evening: Love Meter appears (Amaya route begins)
+        boolean shouldShow = false;
+        
+        if (currentDay > 3) {
+            // Day 4, 5, 6, 7 - Love Meter always visible
+            shouldShow = true;
+        } else if (currentDay == 3 && segment == MainFrame.Segment.EVENING) {
+            // Day 3 Evening - Love Meter appears for the first time
+            shouldShow = true;
+        } else if (currentDay == 3 && segment == MainFrame.Segment.ENDING) {
+            // Day 3 Ending (if applicable) - Love Meter visible
+            shouldShow = true;
+        }
+        // Day 1, 2, and Day 3 Morning - Love Meter hidden
+        
+        setLoveMeterVisible(shouldShow);
+    }
 
-    // In TopBarComponents.java - Add these methods for better day label management
+    // ── Day label API ─────────────────────────────────────────────────────────
 
     /**
      * Update the day indicator with the current day and segment
@@ -140,6 +208,9 @@ public class TopBarComponents extends JPanel {
             case ENDING -> "Ending";
         };
         setDayInfo(day, location);
+        
+        // Also update Love Meter visibility based on new day/segment
+        updateLoveMeterVisibility(day, segment);
     }
 
     /**
@@ -147,6 +218,10 @@ public class TopBarComponents extends JPanel {
      */
     public void updateForShift(int day) {
         setDayInfo(day, "Call Center");
+        
+        // Update Love Meter visibility for shift screen
+        // Shift screen is always during a day's "daytime" segment
+        updateLoveMeterVisibility(day, MainFrame.Segment.MORNING);
     }
 
     /**
@@ -154,8 +229,20 @@ public class TopBarComponents extends JPanel {
      */
     public void updateForShop(int day) {
         setDayInfo(day, "Shop");
+        
+        // Shop appears after evening segments, so use EVENING segment for visibility check
+        updateLoveMeterVisibility(day, MainFrame.Segment.EVENING);
     }
     
+    /**
+     * Update day label for the summary screen
+     */
+    public void updateForSummary(int day) {
+        setDayInfo(day, "Day Summary");
+        
+        // Summary appears after evening, so use EVENING segment
+        updateLoveMeterVisibility(day, MainFrame.Segment.EVENING);
+    }
     
     public void setDayInfo(int day, String location) {
         dayLabel.setText("Day " + day + "  |  " + location);
@@ -174,12 +261,20 @@ public class TopBarComponents extends JPanel {
     protected void paintComponent(Graphics g) {
         Graphics2D g2 = (Graphics2D) g.create();
         g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+        
+        // Calculate gradient width based on whether Love Meter is visible
+        int gradientWidth = loveMeterVisible ? 220 : 200;
+        
         GradientPaint gradient = new GradientPaint(
             0,   0, new Color(0, 0, 0, 180),
-            220, 0, new Color(0, 0, 0, 0)
+            gradientWidth, 0, new Color(0, 0, 0, 0)
         );
         g2.setPaint(gradient);
-        g2.fillRect(0, 0, 220, 105);
+        
+        // Adjust height based on Love Meter visibility
+        int gradientHeight = loveMeterVisible ? 105 : 80;
+        g2.fillRect(0, 0, gradientWidth, gradientHeight);
+        
         g2.dispose();
         super.paintComponent(g);
     }

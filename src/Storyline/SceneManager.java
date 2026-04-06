@@ -15,8 +15,9 @@ public class SceneManager {
         void showNarrator(String text);
         void showChoices(ChoiceEntry[] choices, Runnable onChosen);
         void showIdentityCreation(Runnable onComplete);
+        void showRouteSelection();
         void addPP(int amount);
-        void addLP(int amount);
+        void addLP(int amount, String lpCharacter);
         void onMorningComplete();
         void onEveningComplete();
         void waitForPreload();
@@ -34,18 +35,32 @@ public class SceneManager {
     private int                  sceneIndex = 0;
 
     private final Deque<SceneEntry> subSceneQueue = new ArrayDeque<>();
+    private RouteManager routeManager;
 
-    // ── Constructor ───────────────────────────────────────────────────────────
+    // ── Constructors ──────────────────────────────────────────────────────────
 
+    /** Original constructor for backward compatibility */
     public SceneManager(DayInterface dayScript, SceneManagerDelegate delegate) {
         this.dayScript = dayScript;
         this.delegate  = delegate;
+        this.routeManager = null;
+    }
+    
+    /** New constructor with RouteManager support */
+    public SceneManager(DayInterface dayScript, SceneManagerDelegate delegate, RouteManager routeManager) {
+        this.dayScript = dayScript;
+        this.delegate  = delegate;
+        this.routeManager = routeManager;
     }
 
     // ── Public API ────────────────────────────────────────────────────────────
 
     public void setDayScript(DayInterface dayScript) {
         this.dayScript = dayScript;
+    }
+    
+    public void setRouteManager(RouteManager rm) {
+        this.routeManager = rm;
     }
 
     public void start(Segment segment, int startIndex) {
@@ -69,7 +84,7 @@ public class SceneManager {
     /** Called by InteractionPanel after a choice is selected. */
     public void onChoicePicked(ChoiceEntry chosen) {
         delegate.addPP(chosen.ppReward);
-        delegate.addLP(chosen.lpReward);
+        chosen.lpRewards.forEach((character, amount) -> delegate.addLP(amount, character));
 
         subSceneQueue.clear();
         if (chosen.subScenes != null) {
@@ -127,6 +142,10 @@ public class SceneManager {
                 }
                 delegate.showChoices(choices, () ->
                     SwingUtilities.invokeLater(this::advanceScene));
+            }
+            
+            case SceneEntry.TYPE_ROUTE -> {
+                delegate.showRouteSelection();
             }
 
             default -> advanceScene();

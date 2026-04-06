@@ -9,39 +9,34 @@ import java.util.List;
 
 public class ShopLayer extends JPanel {
 
-    // ── Shop state ────────────────────────────────────────────────────────────
     private final List<Item> shopItems = new ArrayList<>();
-    private int currentIndex = 0;
-    private int playerFunds  = 1000;
-    private boolean isLoaded = false;
+    private int     currentIndex = 0;
+    private int     playerFunds  = 0;
+    private boolean isLoaded     = false;
 
-    // ── Callbacks ─────────────────────────────────────────────────────────────
     @FunctionalInterface public interface PurchaseListener { void onBought(Item item, int cost); }
     private PurchaseListener onPurchase;
     private Runnable         onExit;
 
     public void setOnPurchase(PurchaseListener listener) { this.onPurchase = listener; }
     public void setOnExit(Runnable callback)             { this.onExit     = callback; }
+    public List<Item> getShopItems()                     { return shopItems; }
 
-    // ── Geometry (matches your screenshot layout) ─────────────────────────────
     private static final int CARD_W = 480;
     private static final int CARD_H = 520;
     private static final int CARD_X = (1280 - CARD_W) / 2;
     private static final int CARD_Y = (720  - CARD_H) / 2 + 20;
 
-    // Click regions
     private Rectangle btnBackRect;
     private Rectangle btnNextRect;
     private Rectangle btnBuyRect;
     private Rectangle btnExitRect;
-    private int hoveredBtn = -1; // 0=back, 1=next, 2=buy, 3=exit
+    private int hoveredBtn = -1;
 
-    // Toast state
-    private String toastText    = "";
-    private int    toastAlpha   = 0;
+    private String toastText  = "";
+    private int    toastAlpha = 0;
     private Timer  toastTimer;
 
-    // ── Light theme colors (matching DaySummaryLayer) ─────────────────────────
     private static final Color BG_CARD       = Color.WHITE;
     private static final Color BORDER_COLOR  = new Color(210, 215, 230);
     private static final Color TITLE_COLOR   = new Color(30,  40,  80);
@@ -50,10 +45,10 @@ public class ShopLayer extends JPanel {
     private static final Color ACCENT_BLUE   = new Color(60,  110, 220);
     private static final Color BG_NAV        = new Color(245, 247, 252);
     private static final Color BG_NAV_HOVER  = new Color(238, 242, 250);
-    private static final Color BG_BUY        = new Color(55, 120, 80);
-    private static final Color BG_BUY_HOVER  = new Color(75, 160, 105);
-    private static final Color BG_EXIT       = new Color(70, 35, 35);
-    private static final Color BG_EXIT_HOVER = new Color(100, 55, 55);
+    private static final Color BG_BUY        = new Color(55,  120, 80);
+    private static final Color BG_BUY_HOVER  = new Color(75,  160, 105);
+    private static final Color BG_EXIT       = new Color(70,  35,  35);
+    private static final Color BG_EXIT_HOVER = new Color(100, 55,  55);
     private static final Color SHADOW_COLOR  = new Color(0, 0, 0, 35);
 
     public ShopLayer() {
@@ -69,8 +64,6 @@ public class ShopLayer extends JPanel {
         });
     }
 
-    // ── Public API ────────────────────────────────────────────────────────────
-
     public void load() {
         if (!isLoaded) {
             initItems();
@@ -80,28 +73,55 @@ public class ShopLayer extends JPanel {
         repaint();
     }
 
-    public void setPlayerFunds(int funds) {
-        this.playerFunds = funds;
-        repaint();
-    }
-
-    public int getPlayerFunds() {
-        return playerFunds;
-    }
-
-    // ── Item definitions ──────────────────────────────────────────────────────
+    public void setPlayerFunds(int funds) { this.playerFunds = funds; repaint(); }
+    public int  getPlayerFunds()          { return playerFunds; }
 
     private void initItems() {
         shopItems.clear();
-        shopItems.add(new Item("Coffee",       "A strong cup of coffee.\nRestores focus and grants +5 PP.",  null, 0, 100,  Item.ItemType.CONSUMABLE));
-        shopItems.add(new Item("Lunchbox",     "A hearty homemade meal.\nBoosts energy for +10 PP.",         null, 0, 250,  Item.ItemType.CONSUMABLE));
-        shopItems.add(new Item("Energy Drink", "Instant energy boost.\n+15 PP but -5 LP.",                   null, 0, 150,  Item.ItemType.CONSUMABLE));
-        shopItems.add(new Item("Love Letter",  "A heartfelt letter.\nGrants +20 LP.",                        null, 0, 300,  Item.ItemType.CONSUMABLE));
-        shopItems.add(new Item("Study Notes",  "Detailed class notes.\n+10 PP and +5 LP.",                   null, 0, 400,  Item.ItemType.CONSUMABLE));
-        shopItems.add(new Item("Gift Box",     "A beautifully wrapped gift.\nMassive +30 LP boost.",         null, 0, 500,  Item.ItemType.CONSUMABLE));
-    }
 
-    // ── Input handling ────────────────────────────────────────────────────────
+        shopItems.add(new Item(
+            "Coffee",
+            "A strong brew to sharpen focus.\n+10% PP earned for one full day.",
+            "/GUI/resources/items/coffee.png",
+            0, 80, Item.ItemType.CONSUMABLE,
+            Item.EffectType.PP_MULTIPLIER, 10
+        ));
+        shopItems.add(new Item(
+            "Sticky Note",
+            "A handy reminder on your desk.\nHighlights the best answer for one call.",
+            "/GUI/resources/items/stickynote.png",
+            0, 120, Item.ItemType.CONSUMABLE,
+            Item.EffectType.HINT_PER_CALL, 1
+        ));
+        shopItems.add(new Item(
+            "Clock",
+            "A trusty desk clock to buy you time.\n+10 seconds added to one call timer.",
+            "/GUI/resources/items/clock.png",
+            0, 150, Item.ItemType.CONSUMABLE,
+            Item.EffectType.TIMER_BOOST, 10
+        ));
+        shopItems.add(new Item(
+            "Chocolate",
+            "A sweet treat for someone special.\nGrants +5 Love Points instantly.",
+            "/GUI/resources/items/chocolate.png",
+            0, 200, Item.ItemType.CONSUMABLE,
+            Item.EffectType.LP_FLAT, 5
+        ));
+        shopItems.add(new Item(
+            "Desk Plant",
+            "A little green companion for their desk.\nPassively grants +5% LP each day.",
+            "/GUI/resources/items/deskplant.png",
+            0, 350, Item.ItemType.SPECIAL,
+            Item.EffectType.LP_MULTIPLIER_DAILY, 5
+        ));
+        shopItems.add(new Item(
+            "Book",
+            "A thoughtful read picked just for them.\nGrants +10 Love Points instantly.",
+            "/GUI/resources/items/book.png",
+            0, 300, Item.ItemType.CONSUMABLE,
+            Item.EffectType.LP_FLAT, 10
+        ));
+    }
 
     private void updateHover(Point p) {
         int prev = hoveredBtn;
@@ -132,10 +152,7 @@ public class ShopLayer extends JPanel {
     private void handleBuy() {
         if (shopItems.isEmpty()) return;
         Item item = shopItems.get(currentIndex);
-        if (playerFunds < item.getPrice()) {
-            showToast("Not enough funds!");
-            return;
-        }
+        if (playerFunds < item.getPrice()) { showToast("Not enough funds!"); return; }
         playerFunds -= item.getPrice();
         item.addQuantity(1);
         if (onPurchase != null) onPurchase.onBought(item, item.getPrice());
@@ -147,26 +164,19 @@ public class ShopLayer extends JPanel {
         if (onExit != null) onExit.run();
     }
 
-    // ── Toast ─────────────────────────────────────────────────────────────────
-
     private void showToast(String text) {
         this.toastText  = text;
         this.toastAlpha = 255;
         if (toastTimer != null) toastTimer.stop();
         toastTimer = new Timer(40, e -> {
             toastAlpha -= 8;
-            if (toastAlpha <= 0) {
-                toastAlpha = 0;
-                ((Timer) e.getSource()).stop();
-            }
+            if (toastAlpha <= 0) { toastAlpha = 0; ((Timer) e.getSource()).stop(); }
             repaint();
         });
         toastTimer.setInitialDelay(1200);
         toastTimer.start();
         repaint();
     }
-
-    // ── Painting ──────────────────────────────────────────────────────────────
 
     @Override
     protected void paintComponent(Graphics g) {
@@ -187,7 +197,8 @@ public class ShopLayer extends JPanel {
         drawNavButtons(g2);
         drawPageIndicator(g2);
         drawDescription(g2, item);
-        drawDivider(g2, CARD_Y + 390);
+        drawEffectTag(g2, item);
+        drawDivider(g2, CARD_Y + 400);
         drawPriceRow(g2, item);
         drawFunds(g2);
         drawToast(g2);
@@ -196,16 +207,11 @@ public class ShopLayer extends JPanel {
         g2.dispose();
     }
 
-    // ── Draw helpers ──────────────────────────────────────────────────────────
-
     private void drawCard(Graphics2D g2) {
-        // Shadow
         g2.setColor(SHADOW_COLOR);
         g2.fillRoundRect(CARD_X + 4, CARD_Y + 4, CARD_W, CARD_H, 14, 14);
-        // White card
         g2.setColor(BG_CARD);
         g2.fillRoundRect(CARD_X, CARD_Y, CARD_W, CARD_H, 14, 14);
-        // Border
         g2.setColor(BORDER_COLOR);
         g2.setStroke(new BasicStroke(1f));
         g2.drawRoundRect(CARD_X, CARD_Y, CARD_W - 1, CARD_H - 1, 14, 14);
@@ -234,36 +240,34 @@ public class ShopLayer extends JPanel {
     }
 
     private void drawIcon(Graphics2D g2, Item item) {
-        int iconSize = 130;
+        int iconSize = 120;
         int ix = CARD_X + (CARD_W - iconSize) / 2;
-        int iy = CARD_Y + 110;
+        int iy = CARD_Y + 108;
 
         ImageIcon icon = item.getIcon(iconSize, iconSize);
         if (icon != null) {
             g2.drawImage(icon.getImage(), ix, iy, iconSize, iconSize, null);
         } else {
-            // Placeholder box
             g2.setColor(BG_NAV);
             g2.fillRoundRect(ix, iy, iconSize, iconSize, 12, 12);
             g2.setColor(BORDER_COLOR);
             g2.setStroke(new BasicStroke(1.5f));
             g2.drawRoundRect(ix + 1, iy + 1, iconSize - 2, iconSize - 2, 12, 12);
-            g2.setFont(loadFont(12f, Font.PLAIN));
-            g2.setColor(TEXT_PRIMARY);
+            g2.setFont(loadFont(11f, Font.PLAIN));
+            g2.setColor(TEXT_MUTED);
             FontMetrics fm = g2.getFontMetrics();
-            String t = "ITEM ICON";
+            String t = "NO IMAGE";
             g2.drawString(t, ix + (iconSize - fm.stringWidth(t)) / 2,
                              iy + iconSize / 2 + fm.getAscent() / 2 - 2);
         }
     }
 
     private void drawNavButtons(Graphics2D g2) {
-        int iconSize = 130;
-        int iy       = CARD_Y + 110;
+        int iy   = CARD_Y + 108;
         int btnW = 90, btnH = 32;
-        int btnY = iy + (iconSize - btnH) / 2;
+        int btnY = iy + (120 - btnH) / 2;
 
-        btnBackRect = new Rectangle(CARD_X + 24,               btnY, btnW, btnH);
+        btnBackRect = new Rectangle(CARD_X + 24,                btnY, btnW, btnH);
         btnNextRect = new Rectangle(CARD_X + CARD_W - 24 - btnW, btnY, btnW, btnH);
 
         drawNavBtn(g2, btnBackRect, "◀  Back", hoveredBtn == 0);
@@ -286,45 +290,70 @@ public class ShopLayer extends JPanel {
 
     private void drawPageIndicator(Graphics2D g2) {
         g2.setFont(loadFont(12f, Font.PLAIN));
-        g2.setColor(TEXT_PRIMARY);
+        g2.setColor(TEXT_MUTED);
         String t = (currentIndex + 1) + " / " + shopItems.size();
         FontMetrics fm = g2.getFontMetrics();
-        g2.drawString(t, CARD_X + (CARD_W - fm.stringWidth(t)) / 2, CARD_Y + 256);
+        g2.drawString(t, CARD_X + (CARD_W - fm.stringWidth(t)) / 2, CARD_Y + 244);
     }
 
     private void drawDescription(Graphics2D g2, Item item) {
         g2.setFont(loadFont(13f, Font.PLAIN));
         g2.setColor(TEXT_PRIMARY);
-
         String[] lines = item.getDescription().split("\n");
-        FontMetrics fm = g2.getFontMetrics();
-        int startY = CARD_Y + 278;
-        int lineH  = fm.getHeight() + 4;
+        FontMetrics fm  = g2.getFontMetrics();
+        int startY = CARD_Y + 268;
         for (String line : lines) {
-            int lx = CARD_X + (CARD_W - fm.stringWidth(line)) / 2;
-            g2.drawString(line, lx, startY);
-            startY += lineH;
+            g2.drawString(line, CARD_X + (CARD_W - fm.stringWidth(line)) / 2, startY);
+            startY += fm.getHeight() + 2;
         }
     }
 
-    private void drawPriceRow(Graphics2D g2, Item item) {
-        int rowY = CARD_Y + 412;
+    private void drawEffectTag(Graphics2D g2, Item item) {
+        if (item.getEffectType() == Item.EffectType.NONE) return;
+        String tag = effectTag(item.getEffectType(), item.getEffectValue());
+        g2.setFont(loadFont(11f, Font.BOLD));
+        g2.setColor(new Color(180, 140, 30));
+        FontMetrics fm = g2.getFontMetrics();
+        int tx = CARD_X + (CARD_W - fm.stringWidth(tag)) / 2;
+        int ty = CARD_Y + 340;
+        // Pill background
+        int pw = fm.stringWidth(tag) + 20, ph = 22;
+        g2.setColor(new Color(255, 245, 200));
+        g2.fillRoundRect(tx - 10, ty - 16, pw, ph, 10, 10);
+        g2.setColor(new Color(220, 180, 60));
+        g2.setStroke(new BasicStroke(1f));
+        g2.drawRoundRect(tx - 10, ty - 16, pw, ph, 10, 10);
+        g2.setColor(new Color(140, 100, 10));
+        g2.drawString(tag, tx, ty);
+    }
 
-        // "Price:" label
+    private String effectTag(Item.EffectType type, int value) {
+        return switch (type) {
+            case PP_MULTIPLIER       -> "+" + value + "% PP  •  1 day";
+            case HINT_PER_CALL       -> "Reveals best option  •  1 call";
+            case TIMER_BOOST         -> "+" + value + "s timer  •  1 call";
+            case LP_FLAT             -> "+" + value + " LP  •  instant";
+            case LP_MULTIPLIER_DAILY -> "+" + value + "% LP per day  •  passive";
+            case NONE                -> "";
+        };
+    }
+
+    private void drawPriceRow(Graphics2D g2, Item item) {
+        int rowY = CARD_Y + 422;
+
         g2.setFont(loadFont(13f, Font.PLAIN));
         g2.setColor(TEXT_PRIMARY);
         g2.drawString("Price:", CARD_X + 24, rowY);
 
-        // Price value
         g2.setFont(loadFont(15f, Font.BOLD));
         g2.setColor(ACCENT_BLUE);
         g2.drawString("₱" + item.getPrice(), CARD_X + 80, rowY);
 
-        // Buy button
         int btnW = 110, btnH = 32;
-        btnBuyRect = new Rectangle(CARD_X + CARD_W - 24 - btnW, rowY - 20, btnW, btnH);
+        btnBuyRect = new Rectangle(CARD_X + CARD_W - 24 - btnW, rowY - 22, btnW, btnH);
         boolean hov = hoveredBtn == 2;
-        g2.setColor(hov ? BG_BUY_HOVER : BG_BUY);
+        boolean canAfford = playerFunds >= item.getPrice();
+        g2.setColor(canAfford ? (hov ? BG_BUY_HOVER : BG_BUY) : new Color(160, 160, 160));
         g2.fillRoundRect(btnBuyRect.x, btnBuyRect.y, btnBuyRect.width, btnBuyRect.height, 8, 8);
         g2.setFont(loadFont(14f, Font.BOLD));
         g2.setColor(Color.WHITE);
@@ -340,7 +369,6 @@ public class ShopLayer extends JPanel {
         g2.setColor(ACCENT_BLUE);
         String t = "Your funds: ₱" + playerFunds;
         FontMetrics fm = g2.getFontMetrics();
-        // Moved funds display higher up to avoid overlapping with exit button
         g2.drawString(t, CARD_X + (CARD_W - fm.stringWidth(t)) / 2, CARD_Y + CARD_H - 82);
     }
 
@@ -348,14 +376,13 @@ public class ShopLayer extends JPanel {
         if (toastAlpha <= 0 || toastText.isEmpty()) return;
         g2.setFont(loadFont(14f, Font.BOLD));
         FontMetrics fm = g2.getFontMetrics();
-        int tw = fm.stringWidth(toastText) + 40;
-        int th = 36;
+        int tw = fm.stringWidth(toastText) + 40, th = 36;
         int tx = CARD_X + (CARD_W - tw) / 2;
         int ty = CARD_Y - 50;
-
         g2.setColor(new Color(30, 36, 50, toastAlpha));
         g2.fillRoundRect(tx, ty, tw, th, 10, 10);
-        g2.setColor(new Color(ACCENT_BLUE.getRed(), ACCENT_BLUE.getGreen(), ACCENT_BLUE.getBlue(), toastAlpha));
+        g2.setColor(new Color(ACCENT_BLUE.getRed(), ACCENT_BLUE.getGreen(),
+                              ACCENT_BLUE.getBlue(), toastAlpha));
         g2.setStroke(new BasicStroke(1f));
         g2.drawRoundRect(tx, ty, tw, th, 10, 10);
         g2.setColor(new Color(255, 255, 255, toastAlpha));
@@ -367,7 +394,7 @@ public class ShopLayer extends JPanel {
     private void drawExitButton(Graphics2D g2) {
         int btnW = 110, btnH = 32;
         int bx = CARD_X + (CARD_W - btnW) / 2;
-        int by = CARD_Y + CARD_H - 52;
+        int by = CARD_Y + CARD_H - 50;
         btnExitRect = new Rectangle(bx, by, btnW, btnH);
         boolean hov = hoveredBtn == 3;
         g2.setColor(hov ? BG_EXIT_HOVER : BG_EXIT);
@@ -380,17 +407,14 @@ public class ShopLayer extends JPanel {
                          by + (btnH + fm.getAscent() - fm.getDescent()) / 2);
     }
 
-    // ── Font ──────────────────────────────────────────────────────────────────
-
     private Font loadFont(float size, int style) {
         try {
-            java.io.InputStream s = getClass().getResourceAsStream("/GUI/resources/font/Mulish-VariableFont_wght.ttf");
+            java.io.InputStream s = getClass().getResourceAsStream(
+                "/GUI/resources/font/Mulish-VariableFont_wght.ttf");
             if (s != null) return Font.createFont(Font.TRUETYPE_FONT, s).deriveFont(style, size);
         } catch (Exception ignored) {}
         return new Font("Arial", style, (int) size);
     }
-
-    // ── Size overrides ────────────────────────────────────────────────────────
 
     @Override public Dimension getMinimumSize()   { return new Dimension(1280, 720); }
     @Override public Dimension getMaximumSize()   { return new Dimension(1280, 720); }

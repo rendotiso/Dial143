@@ -1,87 +1,95 @@
 package GUI.panels;
- 
+
 import GUI.panels.universalComponents.BackgroundLayer;
 import GUI.panels.universalComponents.TopBarComponents;
 import GUI.panels.shopComponents.ShopLayer;
-import GUI.panels.InventoryPanel;
+import GUI.panels.inventoryComponents.ItemLayer;
+import Entities.Item;
+import Entities.ActiveEffects;
 import java.awt.Dimension;
 import javax.swing.JPanel;
 import javax.swing.OverlayLayout;
- 
+
 public class ShopPanel extends JPanel {
- 
+
     private final MainFrame     mainPanel;
     private final SettingsPanel settings;
- 
+
     private BackgroundLayer  bg;
     private TopBarComponents topBar;
     private ShopLayer        shopBox;
- 
+    private InventoryPanel   inventory;
+
     public ShopPanel(MainFrame mainPanel, SettingsPanel sharedSettings) {
         this.mainPanel = mainPanel;
         this.settings  = sharedSettings;
- 
         setPreferredSize(new Dimension(1280, 720));
         setLayout(new OverlayLayout(this));
         initializeLayers();
     }
- 
-    // ── Called by MainFrame.showScreen("shop") ────────────────────────────────
- 
+
     public void loadShop() {
-        // Update top bar for shop
         topBar.updateForShop(mainPanel.getCurrentDay());
         topBar.setPpValue(mainPanel.getPP());
         topBar.setLpValue(mainPanel.getLP());
         topBar.setSalaryValue(mainPanel.getSalary());
-        topBar.setDayInfo(mainPanel.getCurrentDay(), "Shop");
- 
+
+        shopBox.load(); // ensures initItems() has run before we share the list
+        inventory.setItems(shopBox.getShopItems());
         shopBox.setPlayerFunds(mainPanel.getSalary());
- 
+
         shopBox.setOnPurchase((item, cost) -> {
-            // Deduct salary immediately on purchase
             mainPanel.setSalary(mainPanel.getSalary() - cost);
             topBar.setSalaryValue(mainPanel.getSalary());
+            inventory.setItems(shopBox.getShopItems());
         });
- 
+
         shopBox.setOnExit(() -> {
             saveStats();
             mainPanel.onShopComplete();
         });
- 
-        shopBox.load();
     }
- 
+
     private void saveStats() {
         mainPanel.setPP(topBar.getCurrentPpValue());
-        mainPanel.setLP(topBar.getCurrentLpValue());
         mainPanel.setSalary(topBar.getCurrentSalaryValue());
     }
- 
-    // ── Layer setup ───────────────────────────────────────────────────────────
- 
+
     private void initializeLayers() {
         bg = new BackgroundLayer();
         bg.setBackgroundFromFile("ConvenienceStore.jpg");
- 
+
         topBar = new TopBarComponents(mainPanel);
         topBar.setSettingsPanel(settings);
         topBar.setParentScreen("shop");
- 
-        InventoryPanel inventory = new InventoryPanel(mainPanel);
+
+        inventory = new InventoryPanel(mainPanel);
         topBar.setInventoryPanel(inventory);
- 
+
+        inventory.setOnItemEffect((effectType, effectValue) -> {
+            ActiveEffects fx = mainPanel.getActiveEffects();
+            if (effectType == Item.EffectType.LP_FLAT) {
+                String activeChar = mainPanel.getRouteManager().hasActiveRoute()
+                    ? mainPanel.getRouteManager().getActiveCharacter() : null;
+                if (activeChar != null) {
+                    mainPanel.getRouteManager().addCharacterLP(activeChar, effectValue);
+                    topBar.addLpPoints(effectValue);
+                }
+            } else {
+                fx.apply(effectType, effectValue);
+            }
+        });
+
         shopBox = new ShopLayer();
- 
+
         add(topBar);
         add(shopBox);
         add(bg);
     }
-    
-    
-    
-    
-    
+
+    @Override public Dimension getMinimumSize()   { return new Dimension(1280, 720); }
+    @Override public Dimension getMaximumSize()   { return new Dimension(1280, 720); }
+    @Override public Dimension getPreferredSize() { return new Dimension(1280, 720); }
     
     /**
      * This method is called from within the constructor to initialize the form.
