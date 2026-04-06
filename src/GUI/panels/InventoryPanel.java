@@ -11,7 +11,7 @@ import java.awt.event.*;
 import java.util.ArrayList;
 import java.util.List;
 import GUI.panels.inventoryComponents.ItemLayer;
-import Entities.Items.Items;
+import Entities.Item;
 
 public class InventoryPanel extends JPanel {
 
@@ -19,7 +19,7 @@ public class InventoryPanel extends JPanel {
     private static final int ROWS      = 3;
     private static final int MAX_SLOTS = COLS * ROWS;
 
-    private final List<Items> items = new ArrayList<>();
+    private final List<Item> items = new ArrayList<>();
 
     private JDialog   dialog;
     private JFrame    owner;
@@ -46,13 +46,13 @@ public class InventoryPanel extends JPanel {
 
     // ── Public API ────────────────────────────────────────────────────────────
 
-    public void setItems(List<Items> items) {
+    public void setItems(List<Item> items) {
         this.items.clear();
         this.items.addAll(items);
         refreshGrid();
     }
 
-    public void addItem(Items item) {
+    public void addItem(Item item) {
         items.add(item);
         refreshGrid();
     }
@@ -141,7 +141,7 @@ public class InventoryPanel extends JPanel {
 
     // ── Slot Factories ────────────────────────────────────────────────────────
 
-    private JPanel makeItemSlot(Items item) {
+    private JPanel makeItemSlot(Item item) {
         JPanel slot = new JPanel(new BorderLayout(0, 4)) {
             private boolean hovered = false;
             {
@@ -216,7 +216,7 @@ public class InventoryPanel extends JPanel {
 
     // ── Detail popup ──────────────────────────────────────────────────────────
 
-    private void openDetail(Items item) {
+    private void openDetail(Item item) {
         detailPanel.setItem(item);
         detailPanel.onItemUsed(this::refreshGrid);
         detailPanel.showAsPopup(owner); 

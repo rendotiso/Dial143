@@ -127,21 +127,35 @@ public class TopBarComponents extends JPanel {
 
     // ── Day label API ─────────────────────────────────────────────────────────
 
-    /**
-     * //@MYLYN ROSARIO
-     * Update the day indicator from anywhere in the game.
-     * Call this in loadContent() / loadCall() when the scene or segment changes.
-     * Example: // InteractionPanel — in loadContent()
-        switch (mainPanel.getCurrentSegment()) {
-            case MORNING -> uiComponents.setDayInfo(mainPanel.getCurrentDay(), "Street");
-            case EVENING -> uiComponents.setDayInfo(mainPanel.getCurrentDay(), "Office");
-            case ENDING  -> uiComponents.setDayInfo(mainPanel.getCurrentDay(), "Ending");
-        }
+    // In TopBarComponents.java - Add these methods for better day label management
 
-        // ShiftPanel — in loadCall()
-        uiComponents.setDayInfo(mainPanel.getCurrentDay(), "Call Center");
-        * 
+    /**
+     * Update the day indicator with the current day and segment
+     * Call this whenever the day or segment changes
      */
+    public void updateDayLabel(int day, MainFrame.Segment segment) {
+        String location = switch (segment) {
+            case MORNING -> "Morning";
+            case EVENING -> "Evening";
+            case ENDING -> "Ending";
+        };
+        setDayInfo(day, location);
+    }
+
+    /**
+     * Update the day label for the shift panel (call center)
+     */
+    public void updateForShift(int day) {
+        setDayInfo(day, "Call Center");
+    }
+
+    /**
+     * Update the day label for the shop
+     */
+    public void updateForShop(int day) {
+        setDayInfo(day, "Shop");
+    }
+    
     
     public void setDayInfo(int day, String location) {
         dayLabel.setText("Day " + day + "  |  " + location);

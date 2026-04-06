@@ -29,6 +29,8 @@ public class ShopPanel extends JPanel {
     // ── Called by MainFrame.showScreen("shop") ────────────────────────────────
  
     public void loadShop() {
+        // Update top bar for shop
+        topBar.updateForShop(mainPanel.getCurrentDay());
         topBar.setPpValue(mainPanel.getPP());
         topBar.setLpValue(mainPanel.getLP());
         topBar.setSalaryValue(mainPanel.getSalary());

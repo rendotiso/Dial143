@@ -3,6 +3,7 @@ package GUI.panels;
 import GUI.panels.universalComponents.BackgroundLayer;
 import GUI.panels.universalComponents.TopBarComponents;
 import GUI.panels.shiftComponents.CallDialogueBoxLayer;
+import GUI.panels.inventoryComponents.*;  // ← this line is missing from ShiftPanel
 import javax.swing.*;
 import java.awt.*;
 
@@ -75,6 +76,8 @@ public class ShiftPanel extends JPanel {
      * Restores stats, resets call pool, loads first call.
      */
     public void loadCall() {
+        // Update top bar for shift/call center
+        topBar.updateForShift(mainPanel.getCurrentDay());
         topBar.setPpValue(mainPanel.getPP());
         topBar.setLpValue(mainPanel.getLP());
         topBar.setSalaryValue(mainPanel.getSalary());

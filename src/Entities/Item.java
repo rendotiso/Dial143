@@ -2,7 +2,7 @@
  * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
  * Click nbfs://nbhost/SystemFileSystem/Templates/Classes/Class.java to edit this template
  */
-package Entities.Items;
+package Entities;
 
 import javax.swing.ImageIcon;
 
@@ -10,7 +10,7 @@ import javax.swing.ImageIcon;
  * Represents a usable item in the game.
  * Reusable across Inventory and Shop systems.
  */
-public class Items {
+public class Item {
 
     private String name;
     private String description;
@@ -26,7 +26,7 @@ public class Items {
     }
 
     // Full constructor
-    public Items(String name, String description, String iconPath, int quantity, int price, ItemType type) {
+    public Item(String name, String description, String iconPath, int quantity, int price, ItemType type) {
         this.name        = name;
         this.description = description;
         this.iconPath    = iconPath;
@@ -36,7 +36,7 @@ public class Items {
     }
 
     // Convenience constructor (no price - inventory only)
-    public Items(String name, String description, String iconPath, int quantity) {
+    public Item(String name, String description, String iconPath, int quantity) {
         this(name, description, iconPath, quantity, 0, ItemType.CONSUMABLE);
     }
 

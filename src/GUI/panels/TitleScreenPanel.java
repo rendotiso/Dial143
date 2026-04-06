@@ -5,10 +5,10 @@ import GUI.panels.titleScreenComponents.*;
 import javax.swing.*;
 import java.awt.*;
  
-public class TitleScreenPanel extends javax.swing.JPanel {
+public class TitleScreenPanel extends JPanel {
  
-    private MainFrame            mainPanel;
-    private BackgroundLayer      bg;
+    private MainFrame             mainPanel;
+    private BackgroundLayer       bg;
     private TitleScreenComponents buttons;
  
     public TitleScreenPanel(MainFrame mainPanel) {
@@ -23,6 +23,7 @@ public class TitleScreenPanel extends javax.swing.JPanel {
  
         buttons = new TitleScreenComponents();
         buttons.setTitleImage("gameTitle.png");
+        buttons.setButtonImage("btn.png");
  
         buttons.setPlayAction(() -> {
             mainPanel.resetStats();
@@ -30,7 +31,6 @@ public class TitleScreenPanel extends javax.swing.JPanel {
         });
  
         buttons.setSaveAction(() -> {
-            // Open SavePanel — lets player load a previous save from title screen
             if (mainPanel.getSavePanel() != null) {
                 mainPanel.showSave("title");
             }
@@ -41,7 +41,6 @@ public class TitleScreenPanel extends javax.swing.JPanel {
         add(buttons);
         add(bg);
     }
-
      // BELOW IS THE CODE GENERATURED FROM NETBEANS
    
     @SuppressWarnings("unchecked")

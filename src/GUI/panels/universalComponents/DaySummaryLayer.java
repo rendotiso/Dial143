@@ -162,6 +162,7 @@ public class DaySummaryLayer extends JPanel {
         g2.drawString(text, CARD_X + (CARD_W - fm.stringWidth(text)) / 2, y);
     }
 
+// In DaySummaryLayer.java - Fix drawRow calls (they were reversed)
     private void drawRow(Graphics2D g2, String label, String value, Color valueColor, Color rowBg, int y) {
         int rx = CARD_X + 24, rw = CARD_W - 48, rh = 36;
         // Row background
@@ -171,11 +172,12 @@ public class DaySummaryLayer extends JPanel {
         g2.setFont(labelFont);
         g2.setColor(LABEL_COLOR);
         g2.drawString(label, rx + 14, y + (rh + g2.getFontMetrics().getAscent() - g2.getFontMetrics().getDescent()) / 2);
-        // Value
+        // Value - align right
         g2.setFont(valueFont);
         g2.setColor(valueColor);
         FontMetrics fm = g2.getFontMetrics();
-        g2.drawString(value, rx + rw - 14 - fm.stringWidth(value), y + (rh + fm.getAscent() - fm.getDescent()) / 2);
+        int valueX = rx + rw - 14 - fm.stringWidth(value);
+        g2.drawString(value, valueX, y + (rh + fm.getAscent() - fm.getDescent()) / 2);
     }
 
     private void drawButtons(Graphics2D g2) {

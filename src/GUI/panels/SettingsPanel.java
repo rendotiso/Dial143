@@ -3,6 +3,8 @@ package GUI.panels;
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.*;
+import java.io.InputStream;
+import GUI.panels.universalComponents.ImageButtonCreation;
 
 public class SettingsPanel extends JPanel {
 
@@ -16,15 +18,13 @@ public class SettingsPanel extends JPanel {
     private static final Color BG_WHITE     = Color.WHITE;
     private static final Color BORDER_COLOR = new Color(210, 215, 230);
     private static final Color TEXT_PRIMARY = new Color(30,  40,  80);
-    private static final Color BTN_EXIT_BG  = new Color(110,  40,  40);
-    private static final Color BTN_EXIT_HOV = new Color(150,  55,  55);
-    private static final Color BTN_SAVE_BG  = new Color(38,   85, 155);
-    private static final Color BTN_SAVE_HOV = new Color(55,  110, 190);
-    private static final Color BTN_CONT_BG  = new Color(55,  110,  75);
-    private static final Color BTN_CONT_HOV = new Color(75,  140, 100);
 
     private Font titleFont;
     private Font btnFont;
+
+    private ImageButtonCreation btnContinue;
+    private ImageButtonCreation btnSaves;
+    private ImageButtonCreation btnExit;
 
     public SettingsPanel(MainFrame mainFrame) {
         this.mainFrame = mainFrame;
@@ -37,6 +37,20 @@ public class SettingsPanel extends JPanel {
     // ── Public API ────────────────────────────────────────────────────────────
 
     public void setPreviousScreen(String screen) { this.previousScreen = screen; }
+
+    /** Apply the same image to all three buttons. */
+    public void setButtonImage(String filename) {
+        btnContinue.setImage(filename);
+        btnSaves.setImage(filename);
+        btnExit.setImage(filename);
+    }
+
+    /** Apply individual images per button; pass null to keep the default style. */
+    public void setButtonImages(String continueFile, String savesFile, String exitFile) {
+        if (continueFile != null) btnContinue.setImage(continueFile);
+        if (savesFile    != null) btnSaves.setImage(savesFile);
+        if (exitFile     != null) btnExit.setImage(exitFile);
+    }
 
     public void showAsPopup(WindowListener listener) {
         if (isHiding) return;
@@ -101,10 +115,19 @@ public class SettingsPanel extends JPanel {
         title.setBorder(BorderFactory.createEmptyBorder(35, 0, 20, 0));
         wrapper.add(title, BorderLayout.NORTH);
 
-        // ── Buttons — GridBagLayout centers the stack vertically ──────────────
-        JButton btnContinue = buildBtn("Continue",      BTN_CONT_BG, BTN_CONT_HOV);
-        JButton btnSaves    = buildBtn("Save / Load",   BTN_SAVE_BG, BTN_SAVE_HOV);
-        JButton btnExit     = buildBtn("Exit to Title", BTN_EXIT_BG, BTN_EXIT_HOV);
+        // ── Buttons ───────────────────────────────────────────────────────────
+        btnContinue = new ImageButtonCreation("Continue");
+        btnSaves    = new ImageButtonCreation("Save / Load");
+        btnExit     = new ImageButtonCreation("Exit to Title");
+        setButtonImage("btn.png");
+
+        Dimension btnSize = new Dimension(212, 40);
+        for (ImageButtonCreation b : new ImageButtonCreation[]{ btnContinue, btnSaves, btnExit }) {
+            b.setFont(btnFont);
+            b.setPreferredSize(btnSize);
+            b.setMaximumSize(btnSize);
+            b.setAlignmentX(Component.CENTER_ALIGNMENT);
+        }
 
         btnContinue.addActionListener(e -> hidePopup());
         btnSaves.addActionListener(e -> { hidePopup(); mainFrame.showSave(previousScreen); });
@@ -113,9 +136,6 @@ public class SettingsPanel extends JPanel {
         JPanel btnStack = new JPanel();
         btnStack.setOpaque(false);
         btnStack.setLayout(new BoxLayout(btnStack, BoxLayout.Y_AXIS));
-        btnContinue.setAlignmentX(Component.CENTER_ALIGNMENT);
-        btnSaves.setAlignmentX(Component.CENTER_ALIGNMENT);
-        btnExit.setAlignmentX(Component.CENTER_ALIGNMENT);
         btnStack.add(btnContinue);
         btnStack.add(Box.createVerticalStrut(12));
         btnStack.add(btnSaves);
@@ -130,47 +150,11 @@ public class SettingsPanel extends JPanel {
         add(wrapper, BorderLayout.CENTER);
     }
 
-    // ── Button factory ────────────────────────────────────────────────────────
-
-    private JButton buildBtn(String text, Color bgColor, Color hoverColor) {
-        JButton btn = new JButton(text) {
-            private boolean hov = false;
-            {
-                addMouseListener(new MouseAdapter() {
-                    public void mouseEntered(MouseEvent e) { hov = true;  repaint(); }
-                    public void mouseExited (MouseEvent e) { hov = false; repaint(); }
-                });
-            }
-            @Override protected void paintComponent(Graphics g) {
-                Graphics2D g2 = (Graphics2D) g.create();
-                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-                g2.setColor(hov ? hoverColor : bgColor);
-                g2.fillRoundRect(0, 0, getWidth(), getHeight(), 10, 10);
-                g2.setColor(Color.WHITE);
-                g2.setFont(getFont());
-                FontMetrics fm = g2.getFontMetrics();
-                g2.drawString(getText(),
-                    (getWidth()  - fm.stringWidth(getText())) / 2,
-                    (getHeight() + fm.getAscent() - fm.getDescent()) / 2);
-                g2.dispose();
-            }
-        };
-        btn.setFont(btnFont);
-        btn.setPreferredSize(new Dimension(212, 40));
-        btn.setMaximumSize(new Dimension(212, 40));
-        btn.setContentAreaFilled(false);
-        btn.setBorderPainted(false);
-        btn.setFocusPainted(false);
-        btn.setFocusable(false);
-        btn.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
-        return btn;
-    }
-
     // ── Fonts ─────────────────────────────────────────────────────────────────
 
     private void loadFonts() {
         try {
-            java.io.InputStream s = getClass().getResourceAsStream(
+            InputStream s = getClass().getResourceAsStream(
                 "/GUI/resources/font/Mulish-VariableFont_wght.ttf");
             Font base = (s != null) ? Font.createFont(Font.TRUETYPE_FONT, s)
                                     : new Font("Georgia", Font.PLAIN, 12);

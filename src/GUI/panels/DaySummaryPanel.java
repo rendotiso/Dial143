@@ -25,12 +25,13 @@ public class DaySummaryPanel extends JPanel {
 
     // ── Called by MainFrame ───────────────────────────────────────────────────
 
+    // In DaySummaryPanel.java - In loadSummary method
     public void loadSummary(int ppGained, int lpGained, int salaryGained,
                             int callsDone, Runnable onEndDay, Runnable onGoToShop) {
         topBar.setPpValue(mainPanel.getPP());
         topBar.setLpValue(mainPanel.getLP());
         topBar.setSalaryValue(mainPanel.getSalary());
-        topBar.setDayInfo(mainPanel.getCurrentDay(), "Day Summary");
+        topBar.setDayInfo(mainPanel.getCurrentDay(), "Day Summary"); // This shows "Day X | Day Summary"
 
         summaryLayer.load(
             mainPanel.getCurrentDay(),
@@ -39,7 +40,7 @@ public class DaySummaryPanel extends JPanel {
             onEndDay, onGoToShop
         );
     }
-
+    
     // ── Layer setup ───────────────────────────────────────────────────────────
 
     private void initializeLayers() {

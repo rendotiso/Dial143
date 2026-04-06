@@ -9,11 +9,11 @@ import javax.swing.border.*;
 import java.awt.*;
 import java.awt.event.*;
 import java.awt.geom.*;
-import Entities.Items.Items;
+import Entities.Item;
 
 public class ItemLayer extends JPanel {
 
-    private Items    item;
+    private Item    item;
     private JDialog dialog;
 
     private JLabel  lblName;
@@ -31,7 +31,7 @@ public class ItemLayer extends JPanel {
         buildUI();
     }
 
-    public void setItem(Items item) {
+    public void setItem(Item item) {
         this.item = item;
         refresh();
     }

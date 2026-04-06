@@ -2,25 +2,21 @@ package GUI.panels.titleScreenComponents;
 
 import javax.swing.*;
 import java.awt.*;
-import java.awt.event.*;
+import java.awt.image.BufferedImage;
+import java.io.InputStream;
+import javax.imageio.ImageIO;
+import GUI.panels.universalComponents.ImageButtonCreation;
 
 public class TitleScreenComponents extends JPanel {
 
-    private JLabel  titleLabel;
-    private JButton btnPlay;
-    private JButton btnSave;
-    private JButton btnExit;
+    private JLabel              titleLabel;
+    private ImageButtonCreation btnPlay;
+    private ImageButtonCreation btnSave;
+    private ImageButtonCreation btnExit;
 
     private Runnable onPlay;
     private Runnable onSave;
     private Runnable onExit;
-
-    private static final Color CHOICE_NORMAL = new Color(238, 238, 238);
-    private static final Color CHOICE_HOVER  = new Color(200, 215, 240);
-    private static final Color CHOICE_CHOSEN = new Color(180, 195, 225);
-    private static final Color CHOICE_BORDER = new Color(160, 160, 160);
-    private static final Color TEXT_COLOR    = new Color(30,  30,  30);
-    private static final Font  CHOICE_FONT   = new Font("Arial", Font.PLAIN, 14);
 
     public TitleScreenComponents() {
         setLayout(null);
@@ -38,71 +34,29 @@ public class TitleScreenComponents extends JPanel {
         titleLabel.setBounds(125, 78, 294, 216);
         add(titleLabel);
 
-        btnPlay = buildChoiceButton("New Game");
+        btnPlay = new ImageButtonCreation("New Game");
         btnPlay.setBounds(108, 444, 236, 38);
         btnPlay.addActionListener(e -> { if (onPlay != null) onPlay.run(); });
         add(btnPlay);
 
-        btnSave = buildChoiceButton("Load Save");
+        btnSave = new ImageButtonCreation("Load Save");
         btnSave.setBounds(108, 492, 236, 38);
         btnSave.addActionListener(e -> { if (onSave != null) onSave.run(); });
         add(btnSave);
 
-        btnExit = buildChoiceButton("Exit");
+        btnExit = new ImageButtonCreation("Exit");
         btnExit.setBounds(108, 540, 236, 38);
         btnExit.addActionListener(e -> { if (onExit != null) onExit.run(); });
         add(btnExit);
     }
 
-    private JButton buildChoiceButton(String label) {
-        JButton btn = new JButton(label) {
-            private boolean hov     = false;
-            private boolean pressed = false;
-            {
-                addMouseListener(new MouseAdapter() {
-                    @Override public void mouseEntered(MouseEvent e) { hov     = true;  repaint(); }
-                    @Override public void mouseExited (MouseEvent e) { hov     = false; repaint(); }
-                    @Override public void mousePressed(MouseEvent e) { pressed = true;  repaint(); }
-                    @Override public void mouseReleased(MouseEvent e){ pressed = false; repaint(); }
-                });
-            }
-            @Override
-            protected void paintComponent(Graphics g) {
-                Graphics2D g2 = (Graphics2D) g.create();
-                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING,      RenderingHints.VALUE_ANTIALIAS_ON);
-                g2.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_ON);
+    // ── Public API ────────────────────────────────────────────────────────────
 
-                Color bg = pressed ? CHOICE_CHOSEN : hov ? CHOICE_HOVER : CHOICE_NORMAL;
-                g2.setColor(bg);
-                g2.fillRect(0, 0, getWidth(), getHeight());
-
-                g2.setColor(CHOICE_BORDER);
-                g2.setStroke(new BasicStroke(1f));
-                g2.drawRect(0, 0, getWidth() - 1, getHeight() - 1);
-
-                g2.setFont(CHOICE_FONT);
-                g2.setColor(TEXT_COLOR);
-                FontMetrics fm = g2.getFontMetrics();
-                g2.drawString(getText(),
-                    (getWidth()  - fm.stringWidth(getText())) / 2,
-                    (getHeight() + fm.getAscent() - fm.getDescent()) / 2);
-
-                g2.dispose();
-            }
-        };
-        btn.setContentAreaFilled(false);
-        btn.setBorderPainted(false);
-        btn.setFocusPainted(false);
-        btn.setFocusable(false);
-        btn.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
-        return btn;
-    }
-    
     public void setTitleImage(String filename) {
         try {
-            java.io.InputStream s = getClass().getResourceAsStream("/GUI/resources/icons/" + filename);
+            InputStream s = getClass().getResourceAsStream("/GUI/resources/icons/" + filename);
             if (s == null) return;
-            java.awt.image.BufferedImage raw = javax.imageio.ImageIO.read(s);
+            BufferedImage raw = ImageIO.read(s);
             int maxW = 500, maxH = 300;
             double scale = Math.min((double) maxW / raw.getWidth(), (double) maxH / raw.getHeight());
             int newW = Math.max(1, (int)(raw.getWidth()  * scale));
@@ -110,10 +64,23 @@ public class TitleScreenComponents extends JPanel {
             Image scaled = raw.getScaledInstance(newW, newH, Image.SCALE_SMOOTH);
             titleLabel.setIcon(new ImageIcon(scaled));
             titleLabel.setText("");
-            int lx = (88 + 236 / 2) - newW / 2; 
+            int lx = (88 + 236 / 2) - newW / 2;
             titleLabel.setBounds(lx, 78, newW, newH);
-        } catch (Exception ex) {
-        }
+        } catch (Exception ex) { /* silently ignore */ }
+    }
+
+    /** Apply the same image to all three buttons. */
+    public void setButtonImage(String filename) {
+        btnPlay.setImage(filename);
+        btnSave.setImage(filename);
+        btnExit.setImage(filename);
+    }
+
+    /** Apply individual images per button; pass null to keep the default style. */
+    public void setButtonImages(String playFile, String saveFile, String exitFile) {
+        if (playFile != null) btnPlay.setImage(playFile);
+        if (saveFile != null) btnSave.setImage(saveFile);
+        if (exitFile != null) btnExit.setImage(exitFile);
     }
 
     public void setPlayAction(Runnable action) { this.onPlay = action; }

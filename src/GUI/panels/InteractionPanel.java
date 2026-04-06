@@ -4,12 +4,14 @@ import GUI.panels.universalComponents.BackgroundLayer;
 import GUI.panels.universalComponents.TopBarComponents;
 import GUI.panels.dialogueComponents.*;
 import GUI.panels.MainFrame;
+import GUI.panels.inventoryComponents.*;
+import Storyline.*;
+ 
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.*;
-import GUI.panels.inventoryComponents.*;
  
-public class InteractionPanel extends javax.swing.JPanel {
+public class InteractionPanel extends JPanel implements SceneManager.SceneManagerDelegate {
  
     private MainFrame             mainPanel;
     private BackgroundLayer       bg;
@@ -19,263 +21,45 @@ public class InteractionPanel extends javax.swing.JPanel {
     private ChoiceButtonLayer     choices;
     private SettingsPanel         settings;
     private IdentityCreationLayer identityPopup;
+ 
     private boolean showingIdentityCreation = false;
  
-    private int currentScene = 0;
+    private Thread       spriteThread;
+    private Thread       bgThread;
+    private SceneManager sceneManager;
  
     public InteractionPanel(MainFrame mainPanel, SettingsPanel sharedSettings) {
         this.mainPanel = mainPanel;
         this.settings  = sharedSettings;
         initComponents();
         initializeLayers();
+        sceneManager = new SceneManager(new Day1(), this);
     }
  
-    private void initializeLayers() {
-        bg          = new BackgroundLayer();
-        sprite      = new SpriteLayer();
-        dialogueBox = new DialogueBoxLayer(mainPanel);
+    // ── SceneManagerDelegate ──────────────────────────────────────────────────
  
-        uiComponents = new TopBarComponents(mainPanel);
-        uiComponents.setSettingsPanel(settings);
-        uiComponents.setParentScreen("dialogue");
- 
-        InventoryPanel inventory = new InventoryPanel(mainPanel);
-        uiComponents.setInventoryPanel(inventory);
-        uiComponents.onSettingsClosed(() -> requestFocusInWindow());
- 
-        identityPopup = new IdentityCreationLayer(mainPanel);
-        identityPopup.setOnComplete(() -> {
-            showingIdentityCreation = false;
-            advanceScene();
-        });
- 
-        choices = new ChoiceButtonLayer();
- 
-        add(choices);
-        add(uiComponents);
-        add(dialogueBox);
-        add(sprite);
-        add(bg);
- 
-        new SwingWorker<Void, Void>() {
-            @Override protected Void doInBackground() {
-                sprite.addSprite("Amaya",   "Amaya_Default_Smiling.PNG");
-                sprite.addSprite("Rosario", "Rosario_Default_Listening.PNG");
-                bg.preload("MorningOffice.jpg", "EveningOffice.jpg", "BuildingEvening.jpg",
-                        "BuildingMorning.jpg", "ConvenienceStore.jpg",
-                        "StreetMorning.jpg", "StreetEvening.jpg");
-                return null;
-            }
-        }.execute();
-    }
- 
-    // ── Load / save ───────────────────────────────────────────────────────────
- 
-    public void loadContent() {
-        uiComponents.setPpValue(mainPanel.getPP());
-        uiComponents.setLpValue(mainPanel.getLP());
-        uiComponents.setSalaryValue(mainPanel.getSalary());
- 
-        // Update day indicator based on current segment
-        switch (mainPanel.getCurrentSegment()) {
-            case MORNING -> uiComponents.setDayInfo(mainPanel.getCurrentDay(), "Morning");
-            case EVENING -> uiComponents.setDayInfo(mainPanel.getCurrentDay(), "Evening");
-            case ENDING  -> uiComponents.setDayInfo(mainPanel.getCurrentDay(), "Ending");
-        }
- 
-        currentScene = mainPanel.getDialogueScene();
-        loadScene(currentScene);
-    }
- 
-    private void saveStats() {
-        mainPanel.setPP(uiComponents.getCurrentPpValue());
-        mainPanel.setLP(uiComponents.getCurrentLpValue());
-        mainPanel.setSalary(uiComponents.getCurrentSalaryValue());
-    }
- 
-    // ── Scene definitions ─────────────────────────────────────────────────────
-    //
-    // Format: { speaker, text, spriteSpec, background }
-    // Special speakers:
-    //   "IDENTITY_CREATION" — shows identity popup
-    //   "CHOICE"            — shows choice buttons; define options in getChoiceLabelsForScene()
- 
-    private final String[][] morningScenes = {
-        // 0
-        {"Narrator",
-         "Your day started as normal. However, this day was one of the ones where you were much more upbeat than usual.",
-         "none", "StreetMorning.jpg"},
- 
-        // 1
-        {"Narrator",
-         "It was now time to start your very first job after graduation. It was not easy to get, and the starting pay was enough to cover bills and necessities.",
-         "none", "BuildingMorning.jpg"},
- 
-        // 2
-        {"Narrator",
-         "You pat off any creases from your office wear, and finally took one last look at your company ID.",
-         "none", "BuildingMorning.jpg"},
- 
-        // 3 — identity creation popup
-        {"IDENTITY_CREATION", "", "", ""},
- 
-        // 4
-        {"Narrator",
-         "You step inside the building, ready for your first day.",
-         "none", "BuildingMorning.jpg"},
- 
-        // 5
-        {"Amaya",
-         "Good morning, {name}! Ready for your first shift?",
-         "single:Amaya", "MorningOffice.jpg"},
- 
-        // 6 — choice: respond to Amaya
-        {"CHOICE", "", "", ""},
- 
-        // 7
-        {"Rosario",
-         "Don't worry Amaya, {pronoun_subject} can do this.",
-         "double:Amaya:Rosario", "MorningOffice.jpg"},
- 
-        // 8 — choice: respond to Rosario
-        {"CHOICE", "", "", ""},
-    };
- 
-    private final String[][] eveningScenes = {
-        {"Narrator",  "The shift is finally over. The evening air feels cool and refreshing.",  "none",           "EveningOffice.jpg"},
-        {"Amaya",     "Great job today, {name}! You handled those calls really well.",          "single:Amaya",   "EveningOffice.jpg"},
-        {"Rosario",   "I'm impressed with how quickly {pronoun_subject}'s learning.",           "single:Rosario", "EveningOffice.jpg"},
-        {"Narrator",  "You feel a sense of accomplishment as you head home.",                   "none",           "StreetEvening.jpg"},
-    };
- 
-    private final String[][] endingScenes = {
-        {"Narrator",  "And so your journey comes to an end...",                               "none",           "placeholderBG2.jpg"},
-        {"Amaya",     "{name}, I'll never forget the time we spent working together.",        "single:Amaya",   "placeholderBG.jpg"},
-        {"Rosario",   "You've grown so much since your first day.",                           "single:Rosario", "placeholderBG.jpg"},
-        {"Narrator",  "THE END",                                                              "none",           "placeholderBG2.jpg"},
-    };
- 
-    // ── Choice definitions ────────────────────────────────────────────────────
-    //
-    // Each entry: { "Button label", "ppDelta", "lpDelta" }
-    // Return null for scenes with no choices.
- 
-    private String[][] getChoiceLabelsForScene(int sceneIndex) {
-        if (mainPanel.getCurrentSegment() != MainFrame.Segment.MORNING) return null;
-        switch (sceneIndex) {
-            case 6: return new String[][] {
-                {"Of course! I'm excited.",    "15", "10"},
-                {"A little nervous, but yes.", "10", "15"},
-                {"Let's just get it done.",    "5",  "5" },
-            };
-            case 8: return new String[][] {
-                {"Thank you, Rosario!",        "5",  "20"},
-                {"I'll try my best.",          "10", "10"},
-                {"I don't need reassurance.",  "15", "0" },
-            };
-            default: return null;
+    @Override
+    public void waitForPreload() {
+        try {
+            if (spriteThread != null) spriteThread.join();
+            if (bgThread     != null) bgThread.join();
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
         }
     }
  
-    // ── Scene routing ─────────────────────────────────────────────────────────
- 
-    private String[][] getCurrentScenes() {
-        switch (mainPanel.getCurrentSegment()) {
-            case MORNING: return morningScenes;
-            case EVENING: return eveningScenes;
-            case ENDING:  return endingScenes;
-            default:      return morningScenes;
-        }
-    }
- 
-    private void loadScene(int sceneIndex) {
-        String[][] scenes = getCurrentScenes();
- 
-        if (sceneIndex >= scenes.length) {
-            saveStats();
-            switch (mainPanel.getCurrentSegment()) {
-                case MORNING -> mainPanel.onMorningComplete();
-                case EVENING -> mainPanel.onEveningComplete();
-                case ENDING  -> mainPanel.onGameComplete();
-            }
-            return;
-        }
- 
-        String[] scene      = scenes[sceneIndex];
-        String   speaker    = scene[0];
-        String   text       = scene[1];
-        String   spriteSpec = scene[2];
-        String   bgName     = scene[3];
- 
-        // ── Identity creation ─────────────────────────────────────────────────
-        if (speaker.equals("IDENTITY_CREATION")) {
-            showingIdentityCreation = true;
-            SwingUtilities.invokeLater(() -> {
-                identityPopup.reset();
-                identityPopup.showAsPopup();
-            });
-            return;
-        }
- 
-        if (showingIdentityCreation) showingIdentityCreation = false;
- 
-        // ── Choice scene ──────────────────────────────────────────────────────
-        if (speaker.equals("CHOICE")) {
-            String[][] choiceData = getChoiceLabelsForScene(sceneIndex);
-            if (choiceData != null) {
-                choices.clearChoices();
-                for (int i = 0; i < choiceData.length; i++) {
-                    choices.addChoice(choiceData[i][0], "choice_" + i, true);
-                }
-                choices.setChoiceListener(new ChoiceButtonLayer.ChoiceListener() {
-                    @Override
-                    public void onChoiceSelected(String choiceText, String nextNode) {
-                        for (int i = 0; i < choiceData.length; i++) {
-                            if (choiceData[i][0].equals(choiceText)) {
-                                int pp = Integer.parseInt(choiceData[i][1]);
-                                int lp = Integer.parseInt(choiceData[i][2]);
-                                uiComponents.addPpPoints(pp);
-                                uiComponents.addLpPoints(lp);
-                                // Track LP gains from dialogue choices in shiftLP
-                                mainPanel.setLP(mainPanel.getLP() + lp);
-                                mainPanel.setPP(mainPanel.getPP() + pp);
-                                choices.hideChoices();
-                                SwingUtilities.invokeLater(() -> advanceScene());
-                                break;
-                            }
-                        }
-                    }
-                });
-                choices.showChoices();
-            } else {
-                advanceScene();
-            }
-            return;
-        }
- 
-        // ── Normal dialogue scene ─────────────────────────────────────────────
-        if (bgName != null && !bgName.isEmpty()) {
-            bg.setBackgroundFromFile(bgName);
+    @Override
+    public void showBackground(String filename) {
+        if (filename != null && !filename.isEmpty()) {
+            bg.setBackgroundFromFile(filename);
         } else {
             bg.setBackgroundColor(new Color(20, 30, 40));
         }
+    }
  
-        // Substitute placeholders
-        String playerName    = mainPanel.getPlayerName();
-        String playerPronoun = mainPanel.getPlayerPronoun();
-        String pronounSubject = (playerPronoun != null && playerPronoun.contains("/"))
-            ? playerPronoun.split("/")[0] : "they";
-        String possessive = (playerPronoun != null && playerPronoun.equals("she/her")) ? "her" : "his";
- 
-        text = text.replace("{name}",              playerName != null ? playerName : "")
-                   .replace("{pronoun_subject}",   pronounSubject)
-                   .replace("{pronoun_possessive}", possessive);
- 
-        dialogueBox.setSpeaker(speaker);
-        dialogueBox.setDialogue(text);
- 
-        // Sprites
-        if (spriteSpec.equals("none")) {
+    @Override
+    public void showSprite(String spriteSpec) {
+        if (spriteSpec == null || spriteSpec.equals("none")) {
             sprite.hideAllSprites();
         } else if (spriteSpec.startsWith("single:")) {
             sprite.showSingleSprite(spriteSpec.split(":")[1]);
@@ -291,19 +75,207 @@ public class InteractionPanel extends javax.swing.JPanel {
         } else {
             sprite.showSingleSprite(spriteSpec);
         }
- 
         choices.hideChoices();
         revalidate();
         repaint();
     }
  
-    private void advanceScene() {
-        currentScene++;
-        mainPanel.setDialogueScene(currentScene);
-        loadScene(currentScene);
+    @Override
+    public void showDialogue(String speaker, String text) {
+        // Replace placeholders in BOTH speaker and text
+        String resolvedSpeaker = resolvePlaceholders(speaker);
+        String resolvedText = resolvePlaceholders(text);
+        dialogueBox.setSpeaker(resolvedSpeaker);
+        dialogueBox.setDialogue(resolvedText);
+    }
+
+    @Override
+    public void showNarrator(String text) {
+        dialogueBox.setSpeaker("Narrator");
+        dialogueBox.setDialogue(resolvePlaceholders(text));
+    }
+
+    @Override
+    public void showChoices(ChoiceEntry[] choiceEntries, Runnable onChosen) {
+        choices.clearChoices();
+        for (ChoiceEntry entry : choiceEntries) {
+            choices.addChoice(entry.label, entry.label, true);
+        }
+        choices.setChoiceListener((choiceText, nextNode) -> {
+            for (ChoiceEntry entry : choiceEntries) {
+                if (entry.label.equals(choiceText)) {
+                    choices.hideChoices();
+                    sceneManager.onChoicePicked(entry);
+                    break;
+                }
+            }
+        });
+        choices.showChoices();
     }
  
-    
+    @Override
+    public void showIdentityCreation(Runnable onComplete) {
+        showingIdentityCreation = true;
+        SwingUtilities.invokeLater(() -> {
+            identityPopup.reset();
+            identityPopup.setOnComplete(() -> {
+                showingIdentityCreation = false;
+                onComplete.run();
+            });
+            identityPopup.showAsPopup();
+        });
+    }
+ 
+    @Override
+    public void addPP(int amount) {
+        uiComponents.addPpPoints(amount);
+        mainPanel.setPP(mainPanel.getPP() + amount);
+    }
+ 
+    @Override
+    public void addLP(int amount) {
+        uiComponents.addLpPoints(amount);
+        mainPanel.setLP(mainPanel.getLP() + amount);
+    }
+ 
+    @Override
+    public void onMorningComplete() {
+        saveStats();
+        mainPanel.onMorningComplete();
+    }
+ 
+    @Override
+    public void onEveningComplete() {
+        saveStats();
+        mainPanel.onEveningComplete();
+    }
+ 
+    // ── Public API ────────────────────────────────────────────────────────────
+ 
+    // In InteractionPanel.java - Update loadContent() method
+    public void loadContent() {
+        uiComponents.setPpValue(mainPanel.getPP());
+        uiComponents.setLpValue(mainPanel.getLP());
+        uiComponents.setSalaryValue(mainPanel.getSalary());
+
+        // Update day label based on current segment
+        switch (mainPanel.getCurrentSegment()) {
+            case MORNING -> uiComponents.updateDayLabel(mainPanel.getCurrentDay(), MainFrame.Segment.MORNING);
+            case EVENING -> uiComponents.updateDayLabel(mainPanel.getCurrentDay(), MainFrame.Segment.EVENING);
+            case ENDING -> uiComponents.updateDayLabel(mainPanel.getCurrentDay(), MainFrame.Segment.ENDING);
+        }
+
+        SceneManager.Segment segment = switch (mainPanel.getCurrentSegment()) {
+            case MORNING -> SceneManager.Segment.MORNING;
+            case EVENING -> SceneManager.Segment.EVENING;
+            case ENDING -> { mainPanel.onGameComplete(); yield SceneManager.Segment.MORNING; }
+        };
+
+        if (mainPanel.getCurrentSegment() != MainFrame.Segment.ENDING) {
+            sceneManager.start(segment, mainPanel.getDialogueScene());
+        }
+    }
+ 
+    public void setDayScript(DayInterface script) {
+        sceneManager.setDayScript(script);
+    }
+ 
+    // ── Helpers ───────────────────────────────────────────────────────────────
+ 
+    private String resolvePlaceholders(String text) {
+        if (text == null) return "";
+        String playerName = mainPanel.getPlayerName();
+        String playerPronoun = mainPanel.getPlayerPronoun();
+
+        // Handle pronoun format like "she/her" or "they/them"
+        String subject = "they";
+        String possessive = "their";
+        String objective = "them";
+
+        if (playerPronoun != null && !playerPronoun.isEmpty()) {
+            String[] parts = playerPronoun.split("/");
+            subject = parts.length > 0 ? parts[0] : "they";
+            possessive = parts.length > 1 ? parts[1] : "their";
+            objective = parts.length > 2 ? parts[2] : "them";
+        }
+
+        return text
+            .replace("{name}", playerName != null ? playerName : "")
+            .replace("{pronoun_subject}", subject)
+            .replace("{pronoun_possessive}", possessive)
+            .replace("{pronoun_objective}", objective);
+    }
+ 
+    private void saveStats() {
+        mainPanel.setPP(uiComponents.getCurrentPpValue());
+        mainPanel.setLP(uiComponents.getCurrentLpValue());
+        mainPanel.setSalary(uiComponents.getCurrentSalaryValue());
+    }
+ 
+    // ── Layer setup ───────────────────────────────────────────────────────────
+ 
+    private void initializeLayers() {
+        bg          = new BackgroundLayer();
+        sprite      = new SpriteLayer();
+        dialogueBox = new DialogueBoxLayer(mainPanel);
+ 
+        uiComponents = new TopBarComponents(mainPanel);
+        uiComponents.setSettingsPanel(settings);
+        uiComponents.setParentScreen("dialogue");
+ 
+        InventoryPanel inventory = new InventoryPanel(mainPanel);
+        uiComponents.setInventoryPanel(inventory);
+        uiComponents.onSettingsClosed(() -> requestFocusInWindow());
+ 
+        identityPopup = new IdentityCreationLayer(mainPanel);
+        choices       = new ChoiceButtonLayer();
+ 
+        add(choices);
+        add(uiComponents);
+        add(dialogueBox);
+        add(sprite);
+        add(bg);
+ 
+        spriteThread = new Thread(() -> {
+            sprite.addSprite("Amaya_Smile",     "Amaya_Smile.png");
+            sprite.addSprite("Amaya_Casual",    "Amaya_Casual.png");
+            sprite.addSprite("Amaya_Sad",       "Amaya_Sad.png");
+            sprite.addSprite("Amaya_Mad",       "Amaya_Mad.png");
+            sprite.addSprite("Amaya_Blushing",  "Amaya_Blushing.png");
+ 
+            sprite.addSprite("Rosario_Smile",    "Rosario_Smile.png");
+            sprite.addSprite("Rosario_Casual",   "Rosario_Casual.png");
+            sprite.addSprite("Rosario_Sad",      "Rosario_Sad.png");
+            sprite.addSprite("Rosario_Mad",      "Rosario_Mad.png");
+            sprite.addSprite("Rosario_Blushing", "Rosario_Blushing.png");
+ 
+            sprite.addSprite("Celeres_Smile",    "Celeres_Smile.png");
+            sprite.addSprite("Celeres_Casual",   "Celeres_Casual.png");
+            sprite.addSprite("Celeres_Sad",      "Celeres_Sad.png");
+            sprite.addSprite("Celeres_Mad",      "Celeres_Mad.png");
+            sprite.addSprite("Celeres_Blushing", "Celeres_Blushing.png");
+ 
+            sprite.addSprite("Cloma_Smile",    "Cloma_Smile.png");
+            sprite.addSprite("Cloma_Casual",   "Cloma_Casual.png");
+            sprite.addSprite("Cloma_Sad",      "Cloma_Sad.png");
+            sprite.addSprite("Cloma_Mad",      "Cloma_Mad.png");
+            sprite.addSprite("Cloma_Blushing", "Cloma_Blushing.png");
+        }, "sprite-preload");
+ 
+        bgThread = new Thread(() ->
+            bg.preload("MorningOffice.jpg", "EveningOffice.jpg", "BuildingEvening.jpg",
+                       "BuildingMorning.jpg", "ConvenienceStore.jpg",
+                       "StreetMorning.jpg", "StreetEvening.jpg",
+                       "MorningElevator.jpg"),
+            "bg-preload"
+        );
+ 
+        spriteThread.setDaemon(true);
+        bgThread.setDaemon(true);
+        spriteThread.start();
+        bgThread.start();
+    }
+ 
      
      // BELOW IS THE CODE GENERATURED FROM NETBEANS
     
@@ -327,7 +299,7 @@ public class InteractionPanel extends javax.swing.JPanel {
 
     private void formMouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_formMouseClicked
             if (!choices.isVisible() && !showingIdentityCreation) {
-                advanceScene();
+                sceneManager.advanceScene();
             }
     }//GEN-LAST:event_formMouseClicked
 

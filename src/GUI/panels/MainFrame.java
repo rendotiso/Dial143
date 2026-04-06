@@ -5,6 +5,7 @@ import java.awt.CardLayout;
 import Entities.Player;
 import javax.swing.*;
 import GUI.panels.universalComponents.TransitionLayer;
+import Storyline.*;
 
 public class MainFrame extends JFrame {
 
@@ -18,7 +19,6 @@ public class MainFrame extends JFrame {
     private ShopPanel        shopPanel;
     private DaySummaryPanel  daySummary;
     private SavePanel        savePanel;
-
     private TransitionLayer transitionLayer;
 
     // ── Shift start snapshots (for "gained this shift" calculation) ───────────
@@ -54,7 +54,7 @@ public class MainFrame extends JFrame {
     private int currentDay          = 1;
     private int callsCompletedToday = 0;
     public static final int CALLS_PER_DAY = 5;
-    public static final int TOTAL_DAYS    = 1;
+    public static final int TOTAL_DAYS    = 7;
 
     public int  getCurrentDay()           { return currentDay; }
     public int  getCallsCompleted()       { return callsCompletedToday; }
@@ -72,9 +72,9 @@ public class MainFrame extends JFrame {
     // ── Segment tracking ──────────────────────────────────────────────────────
     public enum Segment { MORNING, EVENING, ENDING }
     private Segment currentSegment = Segment.MORNING;
-    public Segment getCurrentSegment() { return currentSegment; }
+    public Segment getCurrentSegment()      { return currentSegment; }
     public void    setCurrentSegment(Segment s) { currentSegment = s; }
-    public SavePanel getSavePanel() { return savePanel; }
+    public SavePanel getSavePanel()         { return savePanel; }
 
     // ── Reset ─────────────────────────────────────────────────────────────────
     public void resetStats() {
@@ -102,7 +102,10 @@ public class MainFrame extends JFrame {
                 case "shop"     -> shopPanel.loadShop();
                 case "save"     -> {} // use showSave(returnScreen) instead
                 case "summary"  -> daySummary.loadSummary(
-                    sharedPP, sharedLP, sharedSalary,
+                    // CORRECT ORDER: ppGained, lpGained, salaryGained, callsDone
+                    sharedPP - ppAtShiftStart,      // pp gained this shift
+                    sharedLP - lpAtShiftStart,      // lp gained this shift  
+                    sharedSalary - salaryAtShiftStart, // salary gained this shift
                     callsCompletedToday,
                     () -> onEndDay(),
                     () -> showScreen("shop")
@@ -111,7 +114,6 @@ public class MainFrame extends JFrame {
             transitionLayer.fadeIn();
         });
     }
-
     // ── Game flow callbacks ───────────────────────────────────────────────────
 
     public void onMorningComplete() {
@@ -133,37 +135,36 @@ public class MainFrame extends JFrame {
         showDaySummary();
     }
 
-    /**
-     * Central method that shows the day summary popup.
-     * Called both from onEveningComplete AND from onShopComplete,
-     * so the player always returns here after shopping.
-     */
     private void showDaySummary() {
         showScreen("summary");
     }
 
-    /**
-     * Called by ShopPanel when the player leaves the shop.
-     * Transitions back to the evening dialogue screen first, THEN
-     * re-shows the day summary so the player can click "End Day"
-     * with the correct scene behind it.
-     */
     public void onShopComplete() {
         showDaySummary();
     }
 
     public void onEndDay() {
         if (currentDay >= TOTAL_DAYS) {
+            // Final day done — play ending
             currentSegment = Segment.ENDING;
-            dialogueScene  = 0;
-            dialogueDone   = false;
+            dialogueScene = 0;
+            dialogueDone = false;
             showScreen("dialogue");
         } else {
+            // Advance to the next day
             currentDay++;
             callsCompletedToday = 0;
-            dialogueScene       = 0;
-            dialogueDone        = false;
-            currentSegment      = Segment.MORNING;
+            dialogueScene = 0;
+            dialogueDone = false;
+            currentSegment = Segment.MORNING;
+
+            // Reset shift start snapshots for the new day
+            ppAtShiftStart = sharedPP;
+            lpAtShiftStart = sharedLP;
+            salaryAtShiftStart = sharedSalary;
+
+            // Load the correct day script
+            dialoguePanel.setDayScript(scriptForDay(currentDay));
             showScreen("dialogue");
         }
     }
@@ -171,6 +172,19 @@ public class MainFrame extends JFrame {
     public void onGameComplete() {
         resetStats();
         showScreen("title");
+    }
+
+    /**
+     * Returns the correct DayScript for a given day number.
+     * Add a new case here whenever you add a new DayNScript class.
+     */
+    private DayInterface scriptForDay(int day) {
+        return switch (day) {
+            case 1  -> new Day1();
+            case 2  -> new Day2();
+            // case 3  -> new Day3();
+            default -> new Day1(); // fallback
+        };
     }
 
     // ── Constructor ───────────────────────────────────────────────────────────
@@ -227,13 +241,12 @@ public class MainFrame extends JFrame {
 
         setContentPane(layered);
     }
-  
-     public void showSave(String returnScreen) {
+
+    public void showSave(String returnScreen) {
         transitionLayer.fadeOut(() -> {
             cardLayout.show(mainContainer, "save");
             savePanel.loadSave(returnScreen);
             transitionLayer.fadeIn();
         });
     }
-  
 }

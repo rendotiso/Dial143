@@ -1,6 +1,6 @@
 package GUI.panels.shopComponents;
 
-import Entities.Items.Items;
+import Entities.Item;
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.*;
@@ -10,13 +10,13 @@ import java.util.List;
 public class ShopLayer extends JPanel {
 
     // ── Shop state ────────────────────────────────────────────────────────────
-    private final List<Items> shopItems = new ArrayList<>();
+    private final List<Item> shopItems = new ArrayList<>();
     private int currentIndex = 0;
     private int playerFunds  = 1000;
     private boolean isLoaded = false;
 
     // ── Callbacks ─────────────────────────────────────────────────────────────
-    @FunctionalInterface public interface PurchaseListener { void onBought(Items item, int cost); }
+    @FunctionalInterface public interface PurchaseListener { void onBought(Item item, int cost); }
     private PurchaseListener onPurchase;
     private Runnable         onExit;
 
@@ -93,12 +93,12 @@ public class ShopLayer extends JPanel {
 
     private void initItems() {
         shopItems.clear();
-        shopItems.add(new Items("Coffee",       "A strong cup of coffee.\nRestores focus and grants +5 PP.",  null, 0, 100,  Items.ItemType.CONSUMABLE));
-        shopItems.add(new Items("Lunchbox",     "A hearty homemade meal.\nBoosts energy for +10 PP.",         null, 0, 250,  Items.ItemType.CONSUMABLE));
-        shopItems.add(new Items("Energy Drink", "Instant energy boost.\n+15 PP but -5 LP.",                   null, 0, 150,  Items.ItemType.CONSUMABLE));
-        shopItems.add(new Items("Love Letter",  "A heartfelt letter.\nGrants +20 LP.",                        null, 0, 300,  Items.ItemType.CONSUMABLE));
-        shopItems.add(new Items("Study Notes",  "Detailed class notes.\n+10 PP and +5 LP.",                   null, 0, 400,  Items.ItemType.CONSUMABLE));
-        shopItems.add(new Items("Gift Box",     "A beautifully wrapped gift.\nMassive +30 LP boost.",         null, 0, 500,  Items.ItemType.CONSUMABLE));
+        shopItems.add(new Item("Coffee",       "A strong cup of coffee.\nRestores focus and grants +5 PP.",  null, 0, 100,  Item.ItemType.CONSUMABLE));
+        shopItems.add(new Item("Lunchbox",     "A hearty homemade meal.\nBoosts energy for +10 PP.",         null, 0, 250,  Item.ItemType.CONSUMABLE));
+        shopItems.add(new Item("Energy Drink", "Instant energy boost.\n+15 PP but -5 LP.",                   null, 0, 150,  Item.ItemType.CONSUMABLE));
+        shopItems.add(new Item("Love Letter",  "A heartfelt letter.\nGrants +20 LP.",                        null, 0, 300,  Item.ItemType.CONSUMABLE));
+        shopItems.add(new Item("Study Notes",  "Detailed class notes.\n+10 PP and +5 LP.",                   null, 0, 400,  Item.ItemType.CONSUMABLE));
+        shopItems.add(new Item("Gift Box",     "A beautifully wrapped gift.\nMassive +30 LP boost.",         null, 0, 500,  Item.ItemType.CONSUMABLE));
     }
 
     // ── Input handling ────────────────────────────────────────────────────────
@@ -131,7 +131,7 @@ public class ShopLayer extends JPanel {
 
     private void handleBuy() {
         if (shopItems.isEmpty()) return;
-        Items item = shopItems.get(currentIndex);
+        Item item = shopItems.get(currentIndex);
         if (playerFunds < item.getPrice()) {
             showToast("Not enough funds!");
             return;
@@ -177,7 +177,7 @@ public class ShopLayer extends JPanel {
         g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING,      RenderingHints.VALUE_ANTIALIAS_ON);
         g2.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_ON);
 
-        Items item = shopItems.get(currentIndex);
+        Item item = shopItems.get(currentIndex);
 
         drawCard(g2);
         drawTitle(g2);
@@ -225,7 +225,7 @@ public class ShopLayer extends JPanel {
         g2.drawLine(CARD_X + 24, y, CARD_X + CARD_W - 24, y);
     }
 
-    private void drawItemName(Graphics2D g2, Items item) {
+    private void drawItemName(Graphics2D g2, Item item) {
         g2.setFont(loadFont(18f, Font.BOLD));
         g2.setColor(TITLE_COLOR);
         String t = item.getName();
@@ -233,7 +233,7 @@ public class ShopLayer extends JPanel {
         g2.drawString(t, CARD_X + (CARD_W - fm.stringWidth(t)) / 2, CARD_Y + 96);
     }
 
-    private void drawIcon(Graphics2D g2, Items item) {
+    private void drawIcon(Graphics2D g2, Item item) {
         int iconSize = 130;
         int ix = CARD_X + (CARD_W - iconSize) / 2;
         int iy = CARD_Y + 110;
@@ -292,7 +292,7 @@ public class ShopLayer extends JPanel {
         g2.drawString(t, CARD_X + (CARD_W - fm.stringWidth(t)) / 2, CARD_Y + 256);
     }
 
-    private void drawDescription(Graphics2D g2, Items item) {
+    private void drawDescription(Graphics2D g2, Item item) {
         g2.setFont(loadFont(13f, Font.PLAIN));
         g2.setColor(TEXT_PRIMARY);
 
@@ -307,7 +307,7 @@ public class ShopLayer extends JPanel {
         }
     }
 
-    private void drawPriceRow(Graphics2D g2, Items item) {
+    private void drawPriceRow(Graphics2D g2, Item item) {
         int rowY = CARD_Y + 412;
 
         // "Price:" label
