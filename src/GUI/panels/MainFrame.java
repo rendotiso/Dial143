@@ -6,6 +6,7 @@ import Entities.ActiveEffects;
 import Entities.Player;
 import javax.swing.*;
 import GUI.panels.universalComponents.TransitionLayer;
+import GUI.panels.InventoryPanel;
 import Storyline.*;
 import Storyline.AmayaRoute.AmayaRoute;
 
@@ -22,12 +23,10 @@ public class MainFrame extends JFrame {
     private DaySummaryPanel  daySummary;
     private SavePanel        savePanel;
     private TransitionLayer  transitionLayer;
-
-    // ── Route manager (handles both LP tracking AND active route) ─────────────
-    private final RouteManager routeManager = new AmayaRoute(); // Default placeholder
+    private InventoryPanel   inventory;  
+    private final RouteManager routeManager = new AmayaRoute();
     public RouteManager getRouteManager() { return routeManager; }
-
-    // ── Shift start snapshots ─────────────────────────────────────────────────
+    
     private int ppAtShiftStart;
     private int lpAtShiftStart;
     private int salaryAtShiftStart;
@@ -46,7 +45,7 @@ public class MainFrame extends JFrame {
 
     
     private final ActiveEffects activeEffects = new ActiveEffects();
-public ActiveEffects getActiveEffects() { return activeEffects; }
+    public ActiveEffects getActiveEffects() { return activeEffects; }
 
 
     // ── Shared stats (PP and Salary are global) ───────────────────────────────
@@ -60,17 +59,13 @@ public ActiveEffects getActiveEffects() { return activeEffects; }
     
     // ── LP delegates to RouteManager ──────────────────────────────────────────
     
-    /** Get current LP - returns active route's LP or 0 if no route active */
     public int getLP() {
         if (routeManager.hasActiveRoute()) {
             return routeManager.getActiveLP();
         }
-        // Before route selection, return the total of all character LP? 
-        // For save/load, we need to store per-character
         return 0;
     }
     
-    /** Set LP for the active route character */
     public void setLP(int v) {
         if (routeManager.hasActiveRoute()) {
             String activeChar = routeManager.getActiveCharacter();
@@ -82,19 +77,15 @@ public ActiveEffects getActiveEffects() { return activeEffects; }
         }
     }
     
-    /** Add LP to active route */
     public void addLP(int amount) {
         if (routeManager.hasActiveRoute()) {
             routeManager.addCharacterLP(routeManager.getActiveCharacter(), amount);
         }
     }
-    
-    /** Get LP for a specific character (used by save/load) */
+   
     public int getLPForCharacter(String character) {
         return routeManager.getLPForCharacter(character);
     }
-    
-    /** Set LP for a specific character (used by save/load) */
     public void setLPForCharacter(String character, int value) {
         int current = routeManager.getLPForCharacter(character);
         int diff = value - current;
@@ -110,7 +101,7 @@ public ActiveEffects getActiveEffects() { return activeEffects; }
     public static final int TOTAL_DAYS    = 7;
 
     public int  getCurrentDay()           { return currentDay; }
-    public void setCurrentDay(int day) { this.currentDay = day; }
+    public void setCurrentDay(int day)    { this.currentDay = day; }
     public int  getCallsCompleted()       { return callsCompletedToday; }
     public void incrementCallsCompleted() { callsCompletedToday++; }
 
@@ -129,6 +120,7 @@ public ActiveEffects getActiveEffects() { return activeEffects; }
     public Segment  getCurrentSegment()         { return currentSegment; }
     public void     setCurrentSegment(Segment s){ currentSegment = s; }
     public SavePanel getSavePanel()             { return savePanel; }
+    public InventoryPanel getInventory()        { return inventory; }
 
     // ── Reset ─────────────────────────────────────────────────────────────────
     public void resetStats() {
@@ -145,12 +137,16 @@ public ActiveEffects getActiveEffects() { return activeEffects; }
         salaryAtShiftStart  = 0;
         routeManager.reset();
         activeEffects.reset();
+        if (inventory != null) inventory.clear(); 
     }
 
     // ── Screen routing ────────────────────────────────────────────────────────
-    public void showScreen(String screenName) {
-        transitionLayer.fadeOut(() -> {
-            cardLayout.show(mainContainer, screenName);
+public void showScreen(String screenName) {
+    if (transitionLayer.isTransitioning()) return;
+    
+    transitionLayer.fadeOut(() -> {
+        cardLayout.show(mainContainer, screenName);
+        SwingUtilities.invokeLater(() -> {
             switch (screenName) {
                 case "dialogue" -> dialoguePanel.loadContent();
                 case "shift"    -> shiftPanel.loadCall();
@@ -165,9 +161,12 @@ public ActiveEffects getActiveEffects() { return activeEffects; }
                     () -> showScreen("shop")
                 );
             }
-            transitionLayer.fadeIn();
+            Timer timer = new Timer(50, e -> transitionLayer.fadeIn());
+            timer.setRepeats(false);
+            timer.start();
         });
-    }
+    });
+}
 
     // ── Game flow callbacks ───────────────────────────────────────────────────
 
@@ -242,6 +241,9 @@ public ActiveEffects getActiveEffects() { return activeEffects; }
         setCursor(new Cursor(Cursor.HAND_CURSOR));
         setPreferredSize(new Dimension(1280, 720));
 
+        // Initialize inventory FIRST
+        inventory = new InventoryPanel(this);
+        
         panelObjects();
         setupLayeredContent();
 
@@ -257,10 +259,11 @@ public ActiveEffects getActiveEffects() { return activeEffects; }
 
         titlePanel    = new TitleScreenPanel(this);
         settingsPanel = new SettingsPanel(this);
-        dialoguePanel = new InteractionPanel(this, settingsPanel);
-        shiftPanel    = new ShiftPanel(this, settingsPanel);
-        shopPanel     = new ShopPanel(this, settingsPanel);
-        daySummary    = new DaySummaryPanel(this, settingsPanel);
+        // Pass the SAME inventory instance to all panels
+        dialoguePanel = new InteractionPanel(this, settingsPanel, inventory);
+        shiftPanel    = new ShiftPanel(this, settingsPanel, inventory);
+        shopPanel     = new ShopPanel(this, settingsPanel, inventory);
+        daySummary    = new DaySummaryPanel(this, settingsPanel, inventory);
         savePanel     = new SavePanel(this);
 
         mainContainer.add(titlePanel,    "title");

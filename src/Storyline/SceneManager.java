@@ -21,6 +21,7 @@ public class SceneManager {
         void onMorningComplete();
         void onEveningComplete();
         void waitForPreload();
+        void onSceneEnd(); // Add this method
     }
 
     // ── Segment ───────────────────────────────────────────────────────────────
@@ -107,8 +108,14 @@ public class SceneManager {
         SceneEntry[] scenes = getCurrentScenes();
 
         if (index >= scenes.length) {
-            if (segment == Segment.MORNING) delegate.onMorningComplete();
-            else                            delegate.onEveningComplete();
+            // Stop fast forward when scene ends
+            delegate.onSceneEnd();
+            
+            if (segment == Segment.MORNING) {
+                delegate.onMorningComplete();
+            } else {
+                delegate.onEveningComplete();
+            }
             return;
         }
 

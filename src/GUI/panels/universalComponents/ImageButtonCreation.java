@@ -18,7 +18,6 @@ import javax.swing.JButton;
 
 public class ImageButtonCreation extends JButton {
 
-    // Fallback style (used when no image is set)
     private static final Color CHOICE_NORMAL = new Color(238, 238, 238);
     private static final Color CHOICE_HOVER  = new Color(200, 215, 240);
     private static final Color CHOICE_CHOSEN = new Color(180, 195, 225);
@@ -26,7 +25,6 @@ public class ImageButtonCreation extends JButton {
     private static final Color TEXT_COLOR    = new Color(30,  30,  30);
     private static final Font  CHOICE_FONT   = new Font("Arial", Font.PLAIN, 14);
 
-    // Tint overlays applied on top of the image after 9-slice paint
     private static final Color TINT_HOVER   = new Color(220, 235, 255, 60);
     private static final Color TINT_PRESSED = new Color(0,   0,   0,   70);
 
@@ -49,26 +47,17 @@ public class ImageButtonCreation extends JButton {
         });
     }
 
-    // ── Image loading ─────────────────────────────────────────────────────────
-
-    /**
-     * Load an image by filename from /GUI/resources/icons/ and apply it.
-     * Callers never need their own loadImage() method.
-     */
     public void setImage(String filename) {
         try {
             InputStream s = getClass().getResourceAsStream("/GUI/resources/icons/" + filename);
             if (s != null) setImage(ImageIO.read(s));
-        } catch (Exception ex) { /* silently ignore — fallback style used */ }
+        } catch (Exception ex) {}
     }
 
-    /** Apply an already-loaded BufferedImage directly. */
     public void setImage(BufferedImage img) {
         this.imgNormal = img;
         repaint();
     }
-
-    // ── Paint ─────────────────────────────────────────────────────────────────
 
     @Override
     protected void paintComponent(Graphics g) {
@@ -80,10 +69,7 @@ public class ImageButtonCreation extends JButton {
         int w = getWidth(), h = getHeight();
 
         if (imgNormal != null) {
-            // 1. 9-slice paint
             paintNineSliceH(g2, imgNormal, w, h, (int)(imgNormal.getWidth() * 0.20));
-
-            // 2. Tint overlay clipped to button bounds
             if (isPressed) {
                 g2.setColor(TINT_PRESSED);
                 g2.fillRect(0, 0, w, h);
@@ -93,7 +79,6 @@ public class ImageButtonCreation extends JButton {
             }
 
         } else {
-            // Fallback solid-colour style
             Color bg = isPressed ? CHOICE_CHOSEN : hov ? CHOICE_HOVER : CHOICE_NORMAL;
             g2.setColor(bg);
             g2.fillRect(0, 0, w, h);
@@ -102,7 +87,6 @@ public class ImageButtonCreation extends JButton {
             g2.drawRect(0, 0, w - 1, h - 1);
         }
 
-        // 3. Label text always on top
         g2.setFont(CHOICE_FONT);
         g2.setColor(TEXT_COLOR);
         FontMetrics fm = g2.getFontMetrics();
@@ -113,7 +97,6 @@ public class ImageButtonCreation extends JButton {
         g2.dispose();
     }
 
-    // ── 9-slice helpers ───────────────────────────────────────────────────────
 
     private void paintNineSliceH(Graphics2D g2, BufferedImage src,
                                   int dstW, int dstH, int sliceX) {

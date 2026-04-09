@@ -20,8 +20,8 @@ public class CallDialogueBoxLayer extends JPanel {
     private java.util.function.BiConsumer<Integer, Integer> onPointsAwarded;
     private Runnable onCallComplete;
 
-    private int     timerMax     = 10;
-    private int     timerLeft    = 10;
+    private int     timerMax     = 5;  // Changed to 5 seconds
+    private int     timerLeft    = 5;
     private boolean timerRunning = false;
     private boolean timerPaused  = false;
     private Timer   countdownTimer, typewriterTimer, responseTimer, delayTimer;
@@ -40,10 +40,14 @@ public class CallDialogueBoxLayer extends JPanel {
     private int hoveredChoice = -1;
 
     private List<Integer> remainingCalls = new ArrayList<>();
-    private int totalCalls = 5;
+    private int totalCalls = 3;  // Changed to max 3 calls
 
     private static final int RESPONSE_DELAY_MS = 800; 
-    private static final int NEXT_CALL_DELAY_MS = 300; 
+    private static final int NEXT_CALL_DELAY_MS = 300;
+    
+    // Skip button
+    private Rectangle skipButtonRect;
+    private int hoveredSkip = -1;
 
     public CallDialogueBoxLayer() {
         setOpaque(false);
@@ -100,7 +104,7 @@ public class CallDialogueBoxLayer extends JPanel {
         callNumber    = totalCalls - remainingCalls.size();
 
         // ── Call data ─────────────────────────────────────────────────────────
-        String[] callerNames = {"Sarah", "Miguel", "Jenny", "Mr. Santos", "Anna"};
+        String[] callerNames = {"Sarah", "Miguel", "Jenny"};  // Reduced to 3
 
         String[] callDescriptions = {
             "Hi, I'm at NAIA Terminal 3 and my flight to Cebu was just cancelled. " +
@@ -108,19 +112,13 @@ public class CallDialogueBoxLayer extends JPanel {
             "I booked a hotel through your app but when I arrived, they said my reservation " +
                 "was cancelled! I have proof of payment here.",
             "My baggage didn't arrive on the carousel. " +
-                "I've been waiting for an hour and all the other bags are gone!",
-            "I need to change my flight date because my mother was hospitalized. " +
-                "The website won't let me modify it.",
-            "The courier delivered my bag, but the lock is broken and my laptop is gone! " +
-                "Nanalo na talaga ako sa malas! I want a refund!"
+                "I've been waiting for an hour and all the other bags are gone!"
         };
 
         String[][] choiceSets = {
             {"Check flights",              "Ask for reference",                   "Transfer call"},
             {"Check alternative hotels",   "Offer full refund",                   "Transfer to manager"},
-            {"File lost baggage report",   "Check tracking system",               "Offer compensation"},
-            {"Waive change fee",           "Offer discount on new flight",         "Explain policy"},
-            {"Escalate as theft incident", "Apologize and offer flight refund",    "Remind about no liability policy"}
+            {"File lost baggage report",   "Check tracking system",               "Offer compensation"}
         };
 
         String[][] playerResponseSets = {
@@ -132,13 +130,7 @@ public class CallDialogueBoxLayer extends JPanel {
              "I'll connect you to our customer relations team."},
             {"I'll file a lost baggage report immediately.",
              "Let me track your baggage using the reference number.",
-             "I'll process compensation for the delay."},
-            {"I'll waive the change fee for this emergency.",
-             "I can offer 20% off your new booking.",
-             "Let me explain our medical emergency policy."},
-            {"I am filing an incident report for Theft in Transit immediately.",
-             "Let me process a refund for your flight ticket.",
-             "Our policy says we aren't liable for jewelry or electronics."}
+             "I'll process compensation for the delay."}
         };
 
         String[][] callerResponseSets = {
@@ -150,29 +142,19 @@ public class CallDialogueBoxLayer extends JPanel {
              "Finally someone who can help!"},
             {"Please find my bag, it has my work laptop!",
              "The tracking number is CEB-123-456.",
-             "This is so frustrating!"},
-            {"Oh thank you so much! You're a lifesaver.",
-             "That would really help with the expenses.",
-             "I understand, but this is an emergency!"},
-            {"You better! That laptop is for my work-from-home job!",
-             "Uh... um okay. But the laptop is worth way more than the plane ticket...",
-             "Bastos! You think I have time to read fine print when I'm rushing? I'm reporting this to the DTI!"}
+             "This is so frustrating!"}
         };
 
         int[][] ppSets = {
             {10,  5,  -5},
             {15, 10, -10},
-            {20,  5, -15},
-            {25, 15,  -5},
-            {10,  5,  -5}
+            {20,  5, -15}
         };
 
         int[][] salarySets = {
             {500, 300,  100},
             {600, 400,   50},
-            {700, 300, -100},
-            {800, 500,  200},
-            {500, 300,  100}
+            {700, 300, -100}
         };
 
         callerName          = callerNames[callIndex];
@@ -186,8 +168,8 @@ public class CallDialogueBoxLayer extends JPanel {
         // Reset state
         chosenIndex       = -1;
         showingResponse   = false;
-        timerMax          = 10;
-        timerLeft         = 10;
+        timerMax          = 5;  // 5 seconds
+        timerLeft         = 5;
         timerRunning      = false;
         timerPaused       = false;
         displayedDesc     = "";
@@ -219,14 +201,32 @@ public class CallDialogueBoxLayer extends JPanel {
     public boolean isTimerPaused() { return timerPaused; }
 
     // ── Internal ──────────────────────────────────────────────────────────────
+    
+    private void skipAllCalls() {
+        stopAll();
+        
+        // Skip all remaining calls with 0 points
+        while (!remainingCalls.isEmpty()) {
+            remainingCalls.remove(0);
+        }
+        
+        // Award 0 for current call if no choice made
+        if (chosenIndex == -1 && onPointsAwarded != null) {
+            onPointsAwarded.accept(0, 0);
+        }
+        
+        // Complete the shift
+        if (onCallComplete != null) {
+            SwingUtilities.invokeLater(() -> onCallComplete.run());
+        }
+    }
 
     private void startTypewriter() {
-        // Stop any existing typewriter timer
         if (typewriterTimer != null && typewriterTimer.isRunning()) {
             typewriterTimer.stop();
         }
         
-        typewriterTimer = new Timer(14, e -> {
+        typewriterTimer = new Timer(20, e -> {  // Slightly faster
             if (typeIndex < fullDesc.length()) {
                 displayedDesc = fullDesc.substring(0, ++typeIndex);
                 repaint();
@@ -253,7 +253,11 @@ public class CallDialogueBoxLayer extends JPanel {
                 } else {
                     ((Timer) e.getSource()).stop();
                     timerRunning = false;
-                    if (chosenIndex == -1 && testChoiceLabels.length > 0) selectChoice(0);
+                    if (chosenIndex == -1 && testChoiceLabels.length > 0) {
+                        // Choose random option when timer runs out
+                        int randomChoice = (int) (Math.random() * testChoiceLabels.length);
+                        selectChoice(randomChoice);
+                    }
                 }
             }
         });
@@ -298,7 +302,7 @@ public class CallDialogueBoxLayer extends JPanel {
         responseIndex     = 0;
         showingResponse   = true;
 
-        responseTimer = new Timer(10, e -> { 
+        responseTimer = new Timer(15, e -> { 
             if (responseIndex < fullResponse.length()) {
                 displayedResponse = fullResponse.substring(0, ++responseIndex);
                 repaint();
@@ -324,18 +328,40 @@ public class CallDialogueBoxLayer extends JPanel {
     }
 
     private void updateHover(Point p) {
-        if (chosenIndex != -1 || !timerRunning || timerPaused) return;
         int prev = hoveredChoice;
+        int prevSkip = hoveredSkip;
+        
         hoveredChoice = -1;
-        for (int i = 0; i < choiceRects.length; i++)
-            if (choiceRects[i] != null && choiceRects[i].contains(p)) { hoveredChoice = i; break; }
-        if (hoveredChoice != prev) repaint();
+        hoveredSkip = -1;
+        
+        if (skipButtonRect != null && skipButtonRect.contains(p) && chosenIndex == -1 && !showingResponse) {
+            hoveredSkip = 0;
+        }
+        
+        for (int i = 0; i < choiceRects.length; i++) {
+            if (choiceRects[i] != null && choiceRects[i].contains(p) && chosenIndex == -1 && !timerPaused && !showingResponse) {
+                hoveredChoice = i;
+                break;
+            }
+        }
+        
+        if (hoveredChoice != prev || hoveredSkip != prevSkip) repaint();
     }
 
     private void handleClick(Point p) {
-        if (chosenIndex != -1 || timerPaused) return;
-        for (int i = 0; i < choiceRects.length; i++)
-            if (choiceRects[i] != null && choiceRects[i].contains(p)) { selectChoice(i); return; }
+        if (skipButtonRect != null && skipButtonRect.contains(p) && chosenIndex == -1 && !showingResponse) {
+            skipAllCalls();
+            return;
+        }
+        
+        if (chosenIndex != -1 || timerPaused || showingResponse) return;
+        
+        for (int i = 0; i < choiceRects.length; i++) {
+            if (choiceRects[i] != null && choiceRects[i].contains(p)) {
+                selectChoice(i);
+                return;
+            }
+        }
     }
 
     // ── Paint ─────────────────────────────────────────────────────────────────
@@ -353,6 +379,11 @@ public class CallDialogueBoxLayer extends JPanel {
         int y = CallCreation.drawTitle(g2, callNumber, totalCalls);
         y = CallCreation.drawDivider(g2, y);
         y = CallCreation.drawDescription(g2, callerName, displayedDesc, y);
+        
+        // Draw skip button if not showing response
+        if (!showingResponse && chosenIndex == -1) {
+            skipButtonRect = CallCreation.drawSkipButton(g2, hoveredSkip == 0);
+        }
 
         if (timerPaused) {
             g2.setColor(new Color(255, 255, 255, 180));
@@ -369,14 +400,12 @@ public class CallDialogueBoxLayer extends JPanel {
 
         if (showingResponse)
             y = CallCreation.drawResponse(g2, callerName, displayedResponse, y);
+        
         CallCreation.drawTimerBar(g2, timerLeft, timerMax);
-        if (timerRunning || chosenIndex != -1)
+        
+        if (timerRunning && chosenIndex == -1 && !showingResponse)
             CallCreation.drawChoices(g2, testChoiceLabels, chosenIndex, hoveredChoice, choiceRects);
 
         g2.dispose();
     }
-
-    @Override public Dimension getMinimumSize()   { return new Dimension(1280, 720); }
-    @Override public Dimension getMaximumSize()   { return new Dimension(1280, 720); }
-    @Override public Dimension getPreferredSize() { return new Dimension(1280, 720); }
 }

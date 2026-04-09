@@ -73,8 +73,6 @@ public class SaveDisplayLayer extends JPanel {
         repaint();
     }
 
-    // ── UI Construction ───────────────────────────────────────────────────────
-
     private void buildUI() {
         setBackground(BG_CARD);
         
@@ -126,10 +124,10 @@ public class SaveDisplayLayer extends JPanel {
         JPanel footer = new JPanel(new BorderLayout()) {
         };
         footer.setOpaque(false);
-        footer.setPreferredSize(new Dimension(0, 72));
-        footer.setBorder(BorderFactory.createEmptyBorder(16, 60, 16, 60));
+        footer.setPreferredSize(new Dimension(0, 90));
+        footer.setBorder(BorderFactory.createEmptyBorder(30, 60, 20, 60));
 
-        JButton backBtn = buildBtn(" Back", BACK_BG, Color.WHITE, 120, 40);
+        JButton backBtn = buildBtn("Back", BACK_BG, Color.WHITE, 120, 40);
         backBtn.addActionListener(e -> { if (onBack != null) onBack.run(); });
         footer.add(backBtn, BorderLayout.WEST);
 
@@ -209,28 +207,75 @@ public class SaveDisplayLayer extends JPanel {
         return row;
     }
 
-    // ── Confirm dialogs ───────────────────────────────────────────────────────
 
-    private void confirmSave(int slot) {
-        int r = JOptionPane.showConfirmDialog(this,
-            "Overwrite Slot " + slot + " with current progress?",
-            "Confirm Save", JOptionPane.YES_NO_OPTION, JOptionPane.PLAIN_MESSAGE);
-        if (r == JOptionPane.YES_OPTION) { writeSlot(slot); refresh(); }
+private void confirmSave(int slot) {
+    JOptionPane pane = new JOptionPane(
+        "Overwrite Slot " + slot + " with current progress?",
+        JOptionPane.PLAIN_MESSAGE,
+        JOptionPane.YES_NO_OPTION
+    );
+    JDialog dialog = pane.createDialog(this, "Confirm Save");
+    makeButtonsNonFocusable(pane);
+    dialog.setVisible(true);
+    
+    Object value = pane.getValue();
+    if (value != null && value instanceof Integer) {
+        int r = (Integer) value;
+        if (r == JOptionPane.YES_OPTION) { 
+            writeSlot(slot); 
+            refresh(); 
+        }
     }
+}
 
-    private void confirmLoad(int slot) {
-        int r = JOptionPane.showConfirmDialog(this,
-            "Load Slot " + slot + "? Unsaved progress will be lost.",
-            "Confirm Load", JOptionPane.YES_NO_OPTION, JOptionPane.PLAIN_MESSAGE);
+private void confirmLoad(int slot) {
+    JOptionPane pane = new JOptionPane(
+        "Load Slot " + slot + "? Unsaved progress will be lost.",
+        JOptionPane.PLAIN_MESSAGE,
+        JOptionPane.YES_NO_OPTION
+    );
+    JDialog dialog = pane.createDialog(this, "Confirm Load");
+    makeButtonsNonFocusable(pane);
+    dialog.setVisible(true);
+    
+    Object value = pane.getValue();
+    if (value != null && value instanceof Integer) {
+        int r = (Integer) value;
         if (r == JOptionPane.YES_OPTION) readSlot(slot);
     }
+}
 
-    private void confirmDelete(int slot) {
-        int r = JOptionPane.showConfirmDialog(this,
-            "Delete Slot " + slot + "? This cannot be undone.",
-            "Confirm Delete", JOptionPane.YES_NO_OPTION, JOptionPane.PLAIN_MESSAGE);
-        if (r == JOptionPane.YES_OPTION) { deleteSlot(slot); refresh(); }
+private void confirmDelete(int slot) {
+    JOptionPane pane = new JOptionPane(
+        "Delete Slot " + slot + "? This cannot be undone.",
+        JOptionPane.PLAIN_MESSAGE,
+        JOptionPane.YES_NO_OPTION
+    );
+    JDialog dialog = pane.createDialog(this, "Confirm Delete");
+    makeButtonsNonFocusable(pane);
+    dialog.setVisible(true);
+    
+    Object value = pane.getValue();
+    if (value != null && value instanceof Integer) {
+        int r = (Integer) value;
+        if (r == JOptionPane.YES_OPTION) { 
+            deleteSlot(slot); 
+            refresh(); 
+        }
     }
+}
+        
+    private void makeButtonsNonFocusable(Container container) {
+        for (Component comp : container.getComponents()) {
+            if (comp instanceof AbstractButton) {
+                comp.setFocusable(false);
+            }
+             if (comp instanceof Container) {
+                makeButtonsNonFocusable((Container) comp);
+             }
+        }
+    }
+    
 
     // ── Persistence ───────────────────────────────────────────────────────────
 
@@ -279,11 +324,9 @@ public class SaveDisplayLayer extends JPanel {
     if (p.get(PREF_KEY + slot, null) == null) return;
 
     mainFrame.resetStats();
-
-    // Restore all stats BEFORE showing any screen
     mainFrame.setPP(    p.getInt(PREF_KEY + slot + "_pp",     0));
     mainFrame.setSalary(p.getInt(PREF_KEY + slot + "_salary", 0));
-    mainFrame.setCurrentDay(p.getInt(PREF_KEY + slot + "_day", 1));  // ← was missing
+    mainFrame.setCurrentDay(p.getInt(PREF_KEY + slot + "_day", 1)); 
     mainFrame.setPlayerIdentity(
         p.get(PREF_KEY + slot + "_name",    ""),
         p.get(PREF_KEY + slot + "_gender",  ""),
@@ -295,15 +338,13 @@ public class SaveDisplayLayer extends JPanel {
         mainFrame.setCurrentSegment(MainFrame.Segment.valueOf(
             p.get(PREF_KEY + slot + "_segment", "MORNING")));
     } catch (Exception ignored) {}
-
-    // Restore per-character LP
+    
     RouteManager rm = mainFrame.getRouteManager();
     mainFrame.setLPForCharacter(Character.AMAYA,   p.getInt(PREF_KEY + slot + "_lp_amaya",   0));
     mainFrame.setLPForCharacter(Character.ROSARIO, p.getInt(PREF_KEY + slot + "_lp_rosario", 0));
     mainFrame.setLPForCharacter(Character.CLOMA,   p.getInt(PREF_KEY + slot + "_lp_cloma",   0));
     mainFrame.setLPForCharacter(Character.CELERES, p.getInt(PREF_KEY + slot + "_lp_celeres", 0));
 
-    // Restore active route
     String activeChar = p.get(PREF_KEY + slot + "_active_char", null);
     if (activeChar != null && !activeChar.isEmpty()) {
         RouteManager route = routeForCharacter(activeChar);
@@ -328,7 +369,6 @@ public class SaveDisplayLayer extends JPanel {
         return prefs().get(PREF_KEY + slot, null);
     }
 
-    // ── Helper method for route creation ──────────────────────────────────────
     private RouteManager routeForCharacter(String name) {
         if (name == null) return new AmayaRoute();
         return switch (name) {
@@ -341,7 +381,6 @@ public class SaveDisplayLayer extends JPanel {
     }
 
     // ── Button factory ────────────────────────────────────────────────────────
-
     private JButton buildBtn(String text, Color bgColor, Color fgColor, int w, int h) {
         JButton btn = new JButton(text) {
             private boolean hov = false;
@@ -380,6 +419,7 @@ public class SaveDisplayLayer extends JPanel {
         btn.setContentAreaFilled(false);
         btn.setBorderPainted(false);
         btn.setFocusPainted(false);
+        btn.setFocusable(false);
         btn.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
         btn.setMargin(new Insets(0, 4, 0, 4));
 

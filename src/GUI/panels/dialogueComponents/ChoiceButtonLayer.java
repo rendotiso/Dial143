@@ -238,20 +238,6 @@ public class ChoiceButtonLayer extends JPanel {
         showChoices();
     }
     
-    public void show5Choices(String choice1, String node1,
-                             String choice2, String node2,
-                             String choice3, String node3,
-                             String choice4, String node4,
-                             String choice5, String node5) {
-        clearChoices();
-        addChoice(choice1, node1);
-        addChoice(choice2, node2);
-        addChoice(choice3, node3);
-        addChoice(choice4, node4);
-        addChoice(choice5, node5);
-        showChoices();
-    }
-    
     public void show2ChoicesWithLock(String choice1, String node1, boolean unlocked1,
                                      String choice2, String node2, boolean unlocked2) {
         clearChoices();
@@ -279,20 +265,6 @@ public class ChoiceButtonLayer extends JPanel {
         addChoice(choice2, node2, unlocked2);
         addChoice(choice3, node3, unlocked3);
         addChoice(choice4, node4, unlocked4);
-        showChoices();
-    }
-    
-    public void show5ChoicesWithLock(String choice1, String node1, boolean unlocked1,
-                                     String choice2, String node2, boolean unlocked2,
-                                     String choice3, String node3, boolean unlocked3,
-                                     String choice4, String node4, boolean unlocked4,
-                                     String choice5, String node5, boolean unlocked5) {
-        clearChoices();
-        addChoice(choice1, node1, unlocked1);
-        addChoice(choice2, node2, unlocked2);
-        addChoice(choice3, node3, unlocked3);
-        addChoice(choice4, node4, unlocked4);
-        addChoice(choice5, node5, unlocked5);
         showChoices();
     }
     

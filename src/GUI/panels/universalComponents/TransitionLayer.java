@@ -4,128 +4,193 @@ import javax.swing.*;
 import java.awt.*;
 import java.awt.event.*;
 
-/**
- * TransitionLayer — a full-screen black fade overlay.
- * Add it as the TOP layer in MainFrame's glass pane.
- * Call fadeOut(callback) to fade to black, then fadeIn() to reveal next screen.
- *
- * Usage in MainFrame:
- *   transitionLayer.fadeOut(() -> {
- *       cardLayout.show(...);
- *       transitionLayer.fadeIn();
- *   });
- */
 public class TransitionLayer extends JPanel {
-
-    private static final int   FADE_STEPS    = 20;   // steps per fade
-    private static final int   FADE_DELAY_MS = 16;   // ~60fps
+    
+    // Slower, smoother transition settings
+    private static final int   FADE_STEPS    = 20;  // More steps for smoother fade
+    private static final int   FADE_DELAY_MS = 16;  // ~60 FPS
     private static final float ALPHA_STEP    = 1f / FADE_STEPS;
-
-    private float   alpha       = 0f;   // 0 = fully transparent, 1 = fully black
-    private boolean active      = false; // only paint when needed
+    
+    private float   alpha       = 0f;
+    private boolean active      = false;
     private Timer   fadeTimer;
+    private Runnable pendingCallback = null;
+    private boolean isFadingOut = false;
+    private boolean isFadingIn = false;
 
     public TransitionLayer() {
         setOpaque(false);
         setLayout(null);
-        // Eat all input during transition so nothing is clickable
+        
+        // Block all mouse/key events during transition
         addMouseListener(new MouseAdapter() {});
         addMouseMotionListener(new MouseMotionAdapter() {});
         addKeyListener(new KeyAdapter() {});
+        
         setFocusable(true);
-        setVisible(false); // hidden until first transition
+        setVisible(false);
     }
-
-    // ── Public API ────────────────────────────────────────────────────────────
-
+    
     /**
-     * Fades screen to black, then fires callback.
-     * Callback should switch the card and call fadeIn().
+     * Fade to black, then execute callback
      */
     public void fadeOut(Runnable onComplete) {
+        // Don't interrupt a fade-out that's already in progress
+        if (isFadingOut) return;
+        
+        // If fading in, cancel it and start from current alpha
+        if (isFadingIn && fadeTimer != null) {
+            fadeTimer.stop();
+            isFadingIn = false;
+        }
+        
         stopTimer();
-        alpha  = 0f;
+        isFadingOut = true;
+        isFadingIn = false;
+        alpha = Math.max(0f, Math.min(1f, alpha));
         active = true;
         setVisible(true);
         requestFocusInWindow();
-
+        
+        // Ensure we're fully visible before starting fade out
+        if (alpha < 0.05f) {
+            alpha = 0f;
+            repaint();
+        }
+        
+        pendingCallback = onComplete;
+        
         fadeTimer = new Timer(FADE_DELAY_MS, null);
         fadeTimer.addActionListener(e -> {
             alpha = Math.min(1f, alpha + ALPHA_STEP);
             repaint();
+            
             if (alpha >= 1f) {
                 stopTimer();
-                if (onComplete != null) onComplete.run();
+                isFadingOut = false;
+                if (pendingCallback != null) {
+                    Runnable callback = pendingCallback;
+                    pendingCallback = null;
+                    callback.run();
+                }
             }
         });
         fadeTimer.start();
     }
 
     /**
-     * Fades from black back to transparent, then hides the layer.
+     * Fade in from black
      */
     public void fadeIn() {
         fadeIn(null);
     }
-
-    /** Fade in, then fire onComplete when fully visible. */
+    
     public void fadeIn(Runnable onComplete) {
+        // Don't interrupt a fade-in that's already in progress
+        if (isFadingIn) return;
+        
+        // If fading out, cancel it and start from current alpha
+        if (isFadingOut && fadeTimer != null) {
+            fadeTimer.stop();
+            isFadingOut = false;
+        }
+        
         stopTimer();
-        alpha  = 1f;
+        isFadingIn = true;
+        isFadingOut = false;
+        alpha = Math.min(1f, Math.max(0f, alpha));
         active = true;
         setVisible(true);
-
+        
+        pendingCallback = onComplete;
+        
         fadeTimer = new Timer(FADE_DELAY_MS, null);
         fadeTimer.addActionListener(e -> {
             alpha = Math.max(0f, alpha - ALPHA_STEP);
             repaint();
+            
             if (alpha <= 0f) {
                 stopTimer();
+                isFadingIn = false;
                 active = false;
                 setVisible(false);
-                if (onComplete != null) onComplete.run();
+                if (pendingCallback != null) {
+                    Runnable callback = pendingCallback;
+                    pendingCallback = null;
+                    callback.run();
+                }
             }
         });
         fadeTimer.start();
     }
-
-    /** Instant cut — no animation. Useful for new game. */
+    
+    /**
+     * Instantly show black screen
+     */
     public void cutToBlack() {
         stopTimer();
-        alpha  = 1f;
+        isFadingOut = false;
+        isFadingIn = false;
+        alpha = 1f;
         active = true;
         setVisible(true);
         repaint();
     }
-
+    
+    /**
+     * Instantly clear black screen
+     */
     public void cutToClear() {
         stopTimer();
-        alpha  = 0f;
+        isFadingOut = false;
+        isFadingIn = false;
+        alpha = 0f;
         active = false;
         setVisible(false);
         repaint();
     }
-
-    // ── Painting ──────────────────────────────────────────────────────────────
-
+    
+    /**
+     * Check if currently transitioning
+     */
+    public boolean isTransitioning() {
+        return isFadingOut || isFadingIn;
+    }
+    
     @Override
     protected void paintComponent(Graphics g) {
-        if (!active) return;
+        if (!active && alpha <= 0) return;
+        
         Graphics2D g2 = (Graphics2D) g.create();
-        g2.setColor(new Color(0f, 0f, 0f, alpha));
+        g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+        
+        // Use composite for smoother alpha blending
+        g2.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, alpha));
+        g2.setColor(Color.BLACK);
         g2.fillRect(0, 0, getWidth(), getHeight());
+        
         g2.dispose();
     }
-
-    // ── Helpers ───────────────────────────────────────────────────────────────
-
+    
     private void stopTimer() {
         if (fadeTimer != null && fadeTimer.isRunning()) {
             fadeTimer.stop();
+            fadeTimer = null;
         }
     }
-
-    @Override public Dimension getMinimumSize()   { return new Dimension(1280, 720); }
-    @Override public Dimension getMaximumSize()   { return new Dimension(1280, 720); }
-    @Override public Dimension getPreferredSize() { return new Dimension(1280, 720); }
+    
+    @Override 
+    public Dimension getMinimumSize() { 
+        return new Dimension(1280, 720); 
+    }
+    
+    @Override 
+    public Dimension getMaximumSize() { 
+        return new Dimension(1280, 720); 
+    }
+    
+    @Override 
+    public Dimension getPreferredSize() { 
+        return new Dimension(1280, 720); 
+    }
 }

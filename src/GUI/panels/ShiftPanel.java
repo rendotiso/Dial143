@@ -3,21 +3,25 @@ package GUI.panels;
 import GUI.panels.universalComponents.BackgroundLayer;
 import GUI.panels.universalComponents.TopBarComponents;
 import GUI.panels.shiftComponents.CallDialogueBoxLayer;
-import GUI.panels.inventoryComponents.*;  // ← this line is missing from ShiftPanel
+import GUI.panels.InventoryPanel;
+import Entities.Item;
+import Entities.ActiveEffects;
 import javax.swing.*;
 import java.awt.*;
 
 public class ShiftPanel extends JPanel {
 
     private final MainFrame          mainPanel;
+    private final SettingsPanel      settings;
+    private final InventoryPanel     inventory;
     private BackgroundLayer          bg;
     private CallDialogueBoxLayer     callBox;
     private TopBarComponents         topBar;
-    private SettingsPanel            settings;
 
-    public ShiftPanel(MainFrame mainPanel, SettingsPanel sharedSettings) {
+    public ShiftPanel(MainFrame mainPanel, SettingsPanel sharedSettings, InventoryPanel inventory) {
         this.mainPanel = mainPanel;
         this.settings  = sharedSettings;
+        this.inventory = inventory;
         setPreferredSize(new Dimension(1280, 720));
         setLayout(new OverlayLayout(this));
         initializeLayers();
@@ -30,20 +34,35 @@ public class ShiftPanel extends JPanel {
         topBar = new TopBarComponents(mainPanel);
         topBar.setSettingsPanel(settings);
         topBar.setParentScreen("shift");
-
-        InventoryPanel inventory = new InventoryPanel(mainPanel);
         topBar.setInventoryPanel(inventory);
 
-        callBox = new CallDialogueBoxLayer();
-
-        // Pause around settings, save stats on resume
-        topBar.onSettingsOpening(() -> callBox.pauseTimer());
-        topBar.onSettingsClosed(() -> {
-            saveStats();
-            callBox.resumeTimer();
+        inventory.setOnItemEffect((effectType, effectValue) -> {
+            ActiveEffects fx = mainPanel.getActiveEffects();
+            if (effectType == Item.EffectType.LP_FLAT) {
+                String activeChar = mainPanel.getRouteManager().hasActiveRoute()
+                    ? mainPanel.getRouteManager().getActiveCharacter() : null;
+                if (activeChar != null) {
+                    mainPanel.getRouteManager().addCharacterLP(activeChar, effectValue);
+                    topBar.addLpPoints(effectValue);
+                }
+            } else {
+                fx.apply(effectType, effectValue);
+            }
         });
 
-        // Points from each call → top bar
+    topBar.onSettingsOpening(() -> callBox.pauseTimer());
+    topBar.onSettingsClosed(() -> {
+        saveStats();
+        callBox.resumeTimer();
+    });
+
+    topBar.onInventoryOpening(() -> callBox.pauseTimer());
+    topBar.onInventoryClosed(() -> { 
+        saveStats(); 
+        callBox.resumeTimer();
+    });  // Fixed: Added missing closing parenthesis and semicolon
+
+        callBox = new CallDialogueBoxLayer();
         callBox.onPointsAwarded((pp, salary) -> {
             topBar.addPpPoints(pp);
             topBar.addSalaryPoints(salary);
@@ -51,16 +70,12 @@ public class ShiftPanel extends JPanel {
 
         callBox.onCallComplete(() -> {
             if (callBox.hasMoreCalls()) {
-                Timer timer = new Timer(100, e -> {
-                    callBox.loadTest();
-                });
+                Timer timer = new Timer(100, e -> callBox.loadTest());
                 timer.setRepeats(false);
                 timer.start();
             } else {
                 saveStats();
-                Timer timer = new Timer(100, e -> { 
-                    mainPanel.onCallComplete();
-                });
+                Timer timer = new Timer(100, e -> mainPanel.onCallComplete());
                 timer.setRepeats(false);
                 timer.start();
             }
@@ -71,12 +86,7 @@ public class ShiftPanel extends JPanel {
         add(bg);
     }
 
-    /**
-     * Called by MainFrame.showScreen("shift").
-     * Restores stats, resets call pool, loads first call.
-     */
     public void loadCall() {
-        // Update top bar for shift/call center
         topBar.updateForShift(mainPanel.getCurrentDay());
         topBar.setPpValue(mainPanel.getPP());
         topBar.setLpValue(mainPanel.getLP());
@@ -94,6 +104,7 @@ public class ShiftPanel extends JPanel {
     public void pauseTimer()       { callBox.pauseTimer(); }
     public void resumeTimer()      { callBox.resumeTimer(); }
     public boolean isTimerPaused() { return callBox.isTimerPaused(); }
+    
     @SuppressWarnings("unchecked")
     // <editor-fold defaultstate="collapsed" desc="Generated Code">//GEN-BEGIN:initComponents
     private void initComponents() {

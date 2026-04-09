@@ -3,10 +3,12 @@ package GUI.panels;
 import GUI.panels.universalComponents.BackgroundLayer;
 import GUI.panels.universalComponents.TopBarComponents;
 import GUI.panels.dialogueComponents.*;
-import GUI.panels.inventoryComponents.*;
+import GUI.panels.InventoryPanel;
 import Storyline.*;
 import Storyline.AmayaRoute.AmayaRoute;
 import Entities.Character;
+import Entities.Item;
+import Entities.ActiveEffects;
  
 import javax.swing.*;
 import java.awt.*;
@@ -17,10 +19,11 @@ public class InteractionPanel extends JPanel implements SceneManager.SceneManage
     private MainFrame             mainPanel;
     private BackgroundLayer       bg;
     private SpriteLayer           sprite;
-    private DialogueBoxLayer      dialogueBox;
+    private DialogueBoxLayer     dialogueBox;
     private TopBarComponents      uiComponents;
     private ChoiceButtonLayer     choices;
     private SettingsPanel         settings;
+    private InventoryPanel        inventory;
     private IdentityCreationLayer identityPopup;
  
     private boolean showingIdentityCreation = false;
@@ -30,15 +33,14 @@ public class InteractionPanel extends JPanel implements SceneManager.SceneManage
     private Thread       bgThread;
     private SceneManager sceneManager;
  
-    public InteractionPanel(MainFrame mainPanel, SettingsPanel sharedSettings) {
+    public InteractionPanel(MainFrame mainPanel, SettingsPanel sharedSettings, InventoryPanel inventory) {
         this.mainPanel = mainPanel;
         this.settings  = sharedSettings;
+        this.inventory = inventory;
         initComponents();
         initializeLayers();
         sceneManager = new SceneManager(new Day1(), this, mainPanel.getRouteManager());
     }
- 
-    // ── SceneManagerDelegate ──────────────────────────────────────────────────
  
     @Override
     public void waitForPreload() {
@@ -56,49 +58,42 @@ public class InteractionPanel extends JPanel implements SceneManager.SceneManage
         else bg.setBackgroundColor(new Color(20, 30, 40));
     }
  
-@Override
-public void showSprite(String spriteSpec) {
-    if (spriteSpec == null || spriteSpec.equals("none")) {
-        sprite.hideAllSprites();
-    } else if (spriteSpec.startsWith("single:")) {
-        sprite.showSingleSprite(spriteSpec.substring(7));
-    } else if (spriteSpec.startsWith("double:")) {
-        String rest = spriteSpec.substring(7);
-        String[] p  = rest.split(":");
-        if (p.length >= 2) sprite.showTwoSprites(p[0], p[1]);
-    } else if (spriteSpec.startsWith("triple:")) {
-        String rest = spriteSpec.substring(7);
-        String[] p  = rest.split(":");
-        if (p.length >= 3) sprite.showThreeSprites(p[0], p[1], p[2]);
-    } else if (spriteSpec.startsWith("quadruple:")) {
-        String rest = spriteSpec.substring(10);
-        String[] p  = rest.split(":");
-        if (p.length >= 4) sprite.showFourSprites(p[0], p[1], p[2], p[3]);
-    } else {
-        sprite.showSingleSprite(spriteSpec);
+    @Override
+    public void showSprite(String spriteSpec) {
+        if (spriteSpec == null || spriteSpec.equals("none")) {
+            sprite.hideAllSprites();
+        } else if (spriteSpec.startsWith("single:")) {
+            sprite.showSingleSprite(spriteSpec.substring(7));
+        } else if (spriteSpec.startsWith("double:")) {
+            String rest = spriteSpec.substring(7);
+            String[] p  = rest.split(":");
+            if (p.length >= 2) sprite.showTwoSprites(p[0], p[1]);
+        } else {
+            sprite.showSingleSprite(spriteSpec);
+        }
+        revalidate();
+        repaint();
     }
-    // DO NOT hide choices here — choices visibility is managed by
-    // showChoices() and the choice listener only
-    revalidate();
-    repaint();
-}
  
     @Override
     public void showDialogue(String speaker, String text) {
-        choices.hideChoices();   // ← moved here
+        choices.hideChoices();
+        dialogueBox.onDialogueShown();
         dialogueBox.setSpeaker(resolvePlaceholders(speaker));
         dialogueBox.setDialogue(resolvePlaceholders(text));
     }
 
     @Override
     public void showNarrator(String text) {
-        choices.hideChoices();   // ← moved here
+        choices.hideChoices();
+        dialogueBox.onDialogueShown();
         dialogueBox.setSpeaker("Narrator");
         dialogueBox.setDialogue(resolvePlaceholders(text));
     }
  
     @Override
     public void showChoices(ChoiceEntry[] choiceEntries, Runnable onChosen) {
+        dialogueBox.onChoicesShown();
         choices.clearChoices();
         for (ChoiceEntry entry : choiceEntries) {
             choices.addChoice(entry.label, entry.label, true);
@@ -117,6 +112,7 @@ public void showSprite(String spriteSpec) {
  
     @Override
     public void showRouteSelection() {
+        dialogueBox.onChoicesShown();
         showingRouteSelection = true;
         RouteManager rm = mainPanel.getRouteManager();
 
@@ -127,32 +123,31 @@ public void showSprite(String spriteSpec) {
         boolean allLocked = rm.allRoutesLocked();
 
         choices.clearChoices();
-
         if (allLocked) {
             choices.addChoice("No one - Walk alone", "none", true);
         } else {
-            choices.addChoice("Amaya", Character.AMAYA, amayaOk);
+            choices.addChoice("Amaya",   Character.AMAYA,   amayaOk);
             choices.addChoice("Celeres", Character.CELERES, celeresOk);
-            choices.addChoice("Cloma", Character.CLOMA, clomaOk);
+            choices.addChoice("Cloma",   Character.CLOMA,   clomaOk);
             choices.addChoice("Rosario", Character.ROSARIO, rosarioOk);
         }
-
         choices.setChoiceListener((choiceText, characterId) -> {
             showingRouteSelection = false;
             choices.hideChoices();
             handleRouteChoice(characterId);
         });
-
         choices.showChoices();
     }
  
     @Override
     public void showIdentityCreation(Runnable onComplete) {
+        dialogueBox.onChoicesShown();
         showingIdentityCreation = true;
         SwingUtilities.invokeLater(() -> {
             identityPopup.reset();
             identityPopup.setOnComplete(() -> {
                 showingIdentityCreation = false;
+                dialogueBox.onDialogueShown();
                 onComplete.run();
             });
             identityPopup.showAsPopup();
@@ -165,136 +160,94 @@ public void showSprite(String spriteSpec) {
         mainPanel.setPP(mainPanel.getPP() + amount);
     }
  
-        @Override
-        public void addLP(int amount, String lpCharacter) {
-            RouteManager rm = mainPanel.getRouteManager();
-
-            if (lpCharacter != null) {
-                // Always add LP to the character's pool, even before route is active
-                rm.addCharacterLP(lpCharacter, amount);
-
-                // Only update the UI display if this character is the active route
-                if (rm.hasActiveRoute() && lpCharacter.equals(rm.getActiveCharacter())) {
-                    uiComponents.addLpPoints(amount);
-                } else if (!rm.hasActiveRoute()) {
-                    // Before route selection, we don't show LP in the UI
-                    // But we still track it internally
-                    System.out.println("Added " + amount + " LP to " + lpCharacter + " (Total: " + rm.getLPForCharacter(lpCharacter) + ")");
-                }
-            } else if (rm.hasActiveRoute()) {
-                // No character specified, add to active route
-                rm.addCharacterLP(rm.getActiveCharacter(), amount);
+    @Override
+    public void addLP(int amount, String lpCharacter) {
+        RouteManager rm = mainPanel.getRouteManager();
+        if (lpCharacter != null) {
+            rm.addCharacterLP(lpCharacter, amount);
+            if (rm.hasActiveRoute() && lpCharacter.equals(rm.getActiveCharacter())) {
                 uiComponents.addLpPoints(amount);
+            } else if (!rm.hasActiveRoute()) {
+                System.out.println("Added " + amount + " LP to " + lpCharacter +
+                    " (Total: " + rm.getLPForCharacter(lpCharacter) + ")");
             }
+        } else if (rm.hasActiveRoute()) {
+            rm.addCharacterLP(rm.getActiveCharacter(), amount);
+            uiComponents.addLpPoints(amount);
         }
+    }
  
     @Override
     public void onMorningComplete() {
+        dialogueBox.onSceneEnd(); // ← stop speed up before transitioning
         saveStats();
         mainPanel.onMorningComplete();
     }
  
     @Override
     public void onEveningComplete() {
+        dialogueBox.onSceneEnd(); // ← stop speed up before transitioning
         saveStats();
         mainPanel.onEveningComplete();
     }
+
+    @Override
+    public void onSceneEnd() {
+        dialogueBox.onSceneEnd();
+    }
  
-    // ── Route choice handling ─────────────────────────────────────────────────
- private void handleRouteChoice(String characterId) {
-    if ("none".equals(characterId)) {
-        // No route — queue a short ending and finish normally
-        ChoiceEntry noOne = new ChoiceEntry("No one", 0, 0,
-            SceneEntry.dialogue("{name}", "No. I shouldn't be crushing on anyone.", "none", "StreetEvening.jpg"),
-            SceneEntry.dialogue("{name}", "Focus. That's all that matters.", "none", "StreetEvening.jpg"),
-            SceneEntry.narrator("Some calls... are meant to be unanswered.", "blackBG.jpg")
-        );
-        sceneManager.onChoicePicked(noOne);
-        return;
+    private void handleRouteChoice(String characterId) {
+        if ("none".equals(characterId)) {
+            ChoiceEntry noOne = new ChoiceEntry("No one", 0, 0,
+                SceneEntry.dialogue("{name}", "No. I shouldn't be crushing on anyone.", "none", "StreetEvening.jpg"),
+                SceneEntry.dialogue("{name}", "Focus. That's all that matters.", "none", "StreetEvening.jpg"),
+                SceneEntry.narrator("Some calls... are meant to be unanswered.", "blackBG.jpg")
+            );
+            sceneManager.onChoicePicked(noOne);
+            return;
+        }
+        RouteManager rm        = mainPanel.getRouteManager();
+        RouteManager route     = routeForCharacter(characterId);
+        DayInterface dayScript = rm.selectRoute(route, characterId);
+        int accLP = rm.getLPForCharacter(characterId);
+        uiComponents.setLpValue(accLP);
+        uiComponents.updateLoveMeterVisibility(mainPanel.getCurrentDay(), MainFrame.Segment.EVENING);
+        sceneManager.setDayScript(dayScript);
+        sceneManager.start(SceneManager.Segment.EVENING, 0);
     }
-
-    RouteManager rm   = mainPanel.getRouteManager();
-    RouteManager route = routeForCharacter(characterId);
-
-    // Register the route and get the Day 3 route-specific script
-    DayInterface day3RouteScript = rm.selectRoute(route, characterId);
-
-    // Sync accumulated LP to the top bar now that route is active
-    int accLP = rm.getLPForCharacter(characterId);
-    uiComponents.setLpValue(accLP);
-
-    // Show LP meter
-    uiComponents.updateLoveMeterVisibility(
-        mainPanel.getCurrentDay(), MainFrame.Segment.EVENING);
-
-    // Hand the route's Day 3 script to the scene manager and restart
-    // EVENING from index 0 — this replaces the shared Day3 evening entirely
-    sceneManager.setDayScript(day3RouteScript);
-    sceneManager.start(SceneManager.Segment.EVENING, 0);
-}
-// Helper method to build the scene array for route continuation
-private SceneEntry[] buildRouteEveningScenes(SceneEntry[] scenes) {
-    // Create a list to hold all scenes
-    java.util.ArrayList<SceneEntry> allScenes = new java.util.ArrayList<>();
-    
-    // Add all the route-specific evening scenes
-    for (SceneEntry scene : scenes) {
-        allScenes.add(scene);
-    }
-    
-    // Add a special marker scene that will trigger evening completion
-    // This scene doesn't show anything but signals the scene manager
-    allScenes.add(SceneEntry.narrator("", ""));
-    
-    return allScenes.toArray(new SceneEntry[0]);
-}
  
     private RouteManager routeForCharacter(String name) {
         return switch (name) {
             case Character.AMAYA -> new AmayaRoute();
-            // case Character.CELERES -> new CeleresRoute();
-            // case Character.CLOMA -> new ClomaRoute();
-            // case Character.ROSARIO -> new RosarioRoute();
-            default -> new AmayaRoute();
+            default              -> new AmayaRoute();
         };
     }
  
-    // ── Public API ────────────────────────────────────────────────────────────
- 
     public void loadContent() {
+        dialogueBox.onDialogueShown(); // ensure button is visible on re-entry
         uiComponents.setPpValue(mainPanel.getPP());
         uiComponents.setSalaryValue(mainPanel.getSalary());
- 
         RouteManager rm = mainPanel.getRouteManager();
         uiComponents.setLpValue(rm.hasActiveRoute() ? rm.getActiveLP() : 0);
         uiComponents.updateDayLabel(mainPanel.getCurrentDay(), mainPanel.getCurrentSegment());
- 
         SceneManager.Segment seg = switch (mainPanel.getCurrentSegment()) {
             case MORNING -> SceneManager.Segment.MORNING;
             case EVENING -> SceneManager.Segment.EVENING;
             case ENDING  -> { mainPanel.onGameComplete(); yield SceneManager.Segment.MORNING; }
         };
- 
         if (mainPanel.getCurrentSegment() != MainFrame.Segment.ENDING) {
             sceneManager.start(seg, mainPanel.getDialogueScene());
         }
     }
  
-    public void setDayScript(DayInterface script) {
-        sceneManager.setDayScript(script);
-    }
-    
-    public void setRouteManager(RouteManager rm) {
-        sceneManager.setRouteManager(rm);
-    }
- 
-    // ── Helpers ───────────────────────────────────────────────────────────────
+    public void setDayScript(DayInterface script) { sceneManager.setDayScript(script); }
+    public void setRouteManager(RouteManager rm)  { sceneManager.setRouteManager(rm); }
  
     private String resolvePlaceholders(String text) {
         if (text == null) return "";
-        String name     = mainPanel.getPlayerName();
-        String pronoun  = mainPanel.getPlayerPronoun();
-        String subject    = "they", possessive = "their", objective = "them";
+        String name    = mainPanel.getPlayerName();
+        String pronoun = mainPanel.getPlayerPronoun();
+        String subject = "they", possessive = "their", objective = "them";
         if (pronoun != null && !pronoun.isEmpty()) {
             String[] p = pronoun.split("/");
             subject    = p.length > 0 ? p[0] : "they";
@@ -313,30 +266,47 @@ private SceneEntry[] buildRouteEveningScenes(SceneEntry[] scenes) {
         mainPanel.setSalary(uiComponents.getCurrentSalaryValue());
     }
  
-    // ── Layer setup ───────────────────────────────────────────────────────────
- 
     private void initializeLayers() {
         bg          = new BackgroundLayer();
         sprite      = new SpriteLayer();
         dialogueBox = new DialogueBoxLayer(mainPanel);
- 
+
+        dialogueBox.setOnAdvanceRequest(() -> {
+            if (!choices.isVisible() && !showingIdentityCreation) {
+                sceneManager.advanceScene();
+            }
+        });
+
         uiComponents = new TopBarComponents(mainPanel);
         uiComponents.setSettingsPanel(settings);
         uiComponents.setParentScreen("dialogue");
- 
-        InventoryPanel inventory = new InventoryPanel(mainPanel);
         uiComponents.setInventoryPanel(inventory);
+
+        inventory.setOnItemEffect((effectType, effectValue) -> {
+            ActiveEffects fx = mainPanel.getActiveEffects();
+            if (effectType == Item.EffectType.LP_FLAT) {
+                String activeChar = mainPanel.getRouteManager().hasActiveRoute()
+                    ? mainPanel.getRouteManager().getActiveCharacter() : null;
+                if (activeChar != null) {
+                    mainPanel.getRouteManager().addCharacterLP(activeChar, effectValue);
+                    uiComponents.addLpPoints(effectValue);
+                }
+            } else {
+                fx.apply(effectType, effectValue);
+            }
+        });
+
         uiComponents.onSettingsClosed(() -> requestFocusInWindow());
- 
+
         identityPopup = new IdentityCreationLayer(mainPanel);
         choices       = new ChoiceButtonLayer();
- 
+
         add(choices);
         add(uiComponents);
         add(dialogueBox);
         add(sprite);
         add(bg);
- 
+    
         spriteThread = new Thread(() -> {
             sprite.addSprite("Amaya_Smile",      "Amaya_Smile.png");
             sprite.addSprite("Amaya_Casual",     "Amaya_Casual.png");
@@ -359,7 +329,7 @@ private SceneEntry[] buildRouteEveningScenes(SceneEntry[] scenes) {
             sprite.addSprite("Cloma_Mad",        "Cloma_Mad.png");
             sprite.addSprite("Cloma_Blushing",   "Cloma_Blushing.png");
         }, "sprite-preload");
- 
+
         bgThread = new Thread(() ->
             bg.preload("MorningOffice.jpg", "EveningOffice.jpg", "BuildingEvening.jpg",
                        "BuildingMorning.jpg", "ConvenienceStore.jpg",
@@ -367,13 +337,13 @@ private SceneEntry[] buildRouteEveningScenes(SceneEntry[] scenes) {
                        "MorningElevator.jpg", "BreakRoom.jpg", "blackBG.jpg"),
             "bg-preload"
         );
- 
+
         spriteThread.setDaemon(true);
         bgThread.setDaemon(true);
         spriteThread.start();
         bgThread.start();
     }
-     
+
      // BELOW IS THE CODE GENERATURED FROM NETBEANS
     
     /**

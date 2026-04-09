@@ -3,26 +3,28 @@ package GUI.panels;
 import GUI.panels.universalComponents.BackgroundLayer;
 import GUI.panels.universalComponents.TopBarComponents;
 import GUI.panels.shopComponents.ShopLayer;
-import GUI.panels.inventoryComponents.ItemLayer;
 import Entities.Item;
 import Entities.ActiveEffects;
 import java.awt.Dimension;
 import javax.swing.JPanel;
 import javax.swing.OverlayLayout;
+import javax.swing.SwingUtilities;
+import javax.swing.JOptionPane;
 
 public class ShopPanel extends JPanel {
 
     private final MainFrame     mainPanel;
     private final SettingsPanel settings;
-
+    private final InventoryPanel inventory;
+    
     private BackgroundLayer  bg;
     private TopBarComponents topBar;
     private ShopLayer        shopBox;
-    private InventoryPanel   inventory;
 
-    public ShopPanel(MainFrame mainPanel, SettingsPanel sharedSettings) {
+    public ShopPanel(MainFrame mainPanel, SettingsPanel sharedSettings, InventoryPanel inventory) {
         this.mainPanel = mainPanel;
         this.settings  = sharedSettings;
+        this.inventory = inventory;
         setPreferredSize(new Dimension(1280, 720));
         setLayout(new OverlayLayout(this));
         initializeLayers();
@@ -33,26 +35,29 @@ public class ShopPanel extends JPanel {
         topBar.setPpValue(mainPanel.getPP());
         topBar.setLpValue(mainPanel.getLP());
         topBar.setSalaryValue(mainPanel.getSalary());
-
-        shopBox.load(); // ensures initItems() has run before we share the list
-        inventory.setItems(shopBox.getShopItems());
+        shopBox.load();
         shopBox.setPlayerFunds(mainPanel.getSalary());
+        shopBox.setNavButtonImages("back.png", "next.png");
 
         shopBox.setOnPurchase((item, cost) -> {
-            mainPanel.setSalary(mainPanel.getSalary() - cost);
-            topBar.setSalaryValue(mainPanel.getSalary());
-            inventory.setItems(shopBox.getShopItems());
+            // Sync updated balance to the top bar immediately
+            topBar.setSalaryValue(shopBox.getPlayerFunds());
+            // Add 1 of this item to inventory (addItem stacks by name automatically)
+            item.setQuantity(1);   // temporarily set to 1 for the addItem call
+            inventory.addItem(item);
+            topBar.refreshInventoryButton();
         });
 
         shopBox.setOnExit(() -> {
+            mainPanel.setSalary(shopBox.getPlayerFunds());  // persist final funds
             saveStats();
             mainPanel.onShopComplete();
         });
     }
-
+    
     private void saveStats() {
         mainPanel.setPP(topBar.getCurrentPpValue());
-        mainPanel.setSalary(topBar.getCurrentSalaryValue());
+        mainPanel.setSalary(shopBox.getPlayerFunds());  // authoritative source
     }
 
     private void initializeLayers() {
@@ -62,9 +67,7 @@ public class ShopPanel extends JPanel {
         topBar = new TopBarComponents(mainPanel);
         topBar.setSettingsPanel(settings);
         topBar.setParentScreen("shop");
-
-        inventory = new InventoryPanel(mainPanel);
-        topBar.setInventoryPanel(inventory);
+        topBar.setInventoryPanel(inventory); 
 
         inventory.setOnItemEffect((effectType, effectValue) -> {
             ActiveEffects fx = mainPanel.getActiveEffects();
@@ -86,7 +89,7 @@ public class ShopPanel extends JPanel {
         add(shopBox);
         add(bg);
     }
-
+    
     @Override public Dimension getMinimumSize()   { return new Dimension(1280, 720); }
     @Override public Dimension getMaximumSize()   { return new Dimension(1280, 720); }
     @Override public Dimension getPreferredSize() { return new Dimension(1280, 720); }

@@ -16,6 +16,8 @@ public class TopBarComponents extends JPanel {
 
     private Runnable onSettingsOpening;
     private Runnable onSettingsClosed;
+    private Runnable onInventoryOpening;  // Add this
+    private Runnable onInventoryClosed;   // Add this
 
     private javax.swing.JButton btnSettings;
     private javax.swing.JButton btnInventory;
@@ -166,13 +168,6 @@ public class TopBarComponents extends JPanel {
         return loveMeterVisible;
     }
     
-    /**
-     * Auto-detect whether Love Meter should be visible based on current day and segment.
-     * Call this when loading a new scene.
-     * 
-     * @param currentDay the current game day (1-7)
-     * @param segment the current game segment (MORNING, EVENING, ENDING)
-     */
     public void updateLoveMeterVisibility(int currentDay, MainFrame.Segment segment) {
         // Love Meter appears starting Day 3 Evening
         // Day 1-2: No Love Meter (prologue, no route active)
@@ -181,26 +176,15 @@ public class TopBarComponents extends JPanel {
         boolean shouldShow = false;
         
         if (currentDay > 3) {
-            // Day 4, 5, 6, 7 - Love Meter always visible
             shouldShow = true;
         } else if (currentDay == 3 && segment == MainFrame.Segment.EVENING) {
-            // Day 3 Evening - Love Meter appears for the first time
             shouldShow = true;
         } else if (currentDay == 3 && segment == MainFrame.Segment.ENDING) {
-            // Day 3 Ending (if applicable) - Love Meter visible
             shouldShow = true;
         }
-        // Day 1, 2, and Day 3 Morning - Love Meter hidden
-        
         setLoveMeterVisible(shouldShow);
     }
 
-    // ── Day label API ─────────────────────────────────────────────────────────
-
-    /**
-     * Update the day indicator with the current day and segment
-     * Call this whenever the day or segment changes
-     */
     public void updateDayLabel(int day, MainFrame.Segment segment) {
         String location = switch (segment) {
             case MORNING -> "Morning";
@@ -209,7 +193,6 @@ public class TopBarComponents extends JPanel {
         };
         setDayInfo(day, location);
         
-        // Also update Love Meter visibility based on new day/segment
         updateLoveMeterVisibility(day, segment);
     }
 
@@ -219,28 +202,16 @@ public class TopBarComponents extends JPanel {
     public void updateForShift(int day) {
         setDayInfo(day, "Call Center");
         
-        // Update Love Meter visibility for shift screen
-        // Shift screen is always during a day's "daytime" segment
         updateLoveMeterVisibility(day, MainFrame.Segment.MORNING);
     }
 
-    /**
-     * Update the day label for the shop
-     */
     public void updateForShop(int day) {
         setDayInfo(day, "Shop");
-        
-        // Shop appears after evening segments, so use EVENING segment for visibility check
         updateLoveMeterVisibility(day, MainFrame.Segment.EVENING);
     }
-    
-    /**
-     * Update day label for the summary screen
-     */
+
     public void updateForSummary(int day) {
         setDayInfo(day, "Day Summary");
-        
-        // Summary appears after evening, so use EVENING segment
         updateLoveMeterVisibility(day, MainFrame.Segment.EVENING);
     }
     
@@ -249,13 +220,10 @@ public class TopBarComponents extends JPanel {
         dayLabel.repaint();
     }
 
-    /** Freeform override, e.g. setDayInfo("Prologue  |  Street") */
     public void setDayInfo(String text) {
         dayLabel.setText(text);
         dayLabel.repaint();
     }
-
-    // ── Dark gradient behind stats ────────────────────────────────────────────
 
     @Override
     protected void paintComponent(Graphics g) {
@@ -304,6 +272,19 @@ public class TopBarComponents extends JPanel {
 
     public void setInventoryPanel(InventoryPanel inventory) {
         this.inventory = inventory;
+        
+        // Wire up the inventory callbacks for timer pause/resume
+        if (inventory != null) {
+            inventory.onInventoryOpening(() -> {
+                if (onInventoryOpening != null) onInventoryOpening.run();
+            });
+            inventory.onInventoryClosed(() -> {
+                if (onInventoryClosed != null) onInventoryClosed.run();
+                refreshInventoryButton();
+            });
+        }
+        
+        refreshInventoryButton();
     }
 
     private void setupSettingsButton() {
@@ -331,15 +312,33 @@ public class TopBarComponents extends JPanel {
         });
     }
 
+    public void refreshInventoryButton() {
+        if (inventory != null) {
+            if (!inventory.isEmpty()) {
+                int totalItems = inventory.getTotalItemCount();
+                btnInventory.setToolTipText("Inventory (" + totalItems + " items)");
+                btnInventory.setBorder(BorderFactory.createLineBorder(new Color(255, 215, 0), 2));
+            } else {
+                btnInventory.setToolTipText("Inventory (empty)");
+                btnInventory.setBorder(null);
+            }
+        }
+    }
+
     private void handleInventoryClick() {
         if (inventory == null) {
             System.err.println("InventoryPanel not set in TopBarComponents");
             return;
         }
+        
         btnInventory.setEnabled(false);
+        
+        // Show inventory popup (timer pause/resume is handled inside InventoryPanel)
         inventory.showAsPopup();
+        
         SwingUtilities.invokeLater(() -> {
             btnInventory.setEnabled(true);
+            refreshInventoryButton();
             requestFocusInWindow();
         });
     }
@@ -355,8 +354,13 @@ public class TopBarComponents extends JPanel {
     // ── Callbacks / config ────────────────────────────────────────────────────
 
     public void setParentScreen(String screenName)   { this.parentScreen = screenName; }
+    
     public void onSettingsOpening(Runnable callback) { this.onSettingsOpening = callback; }
     public void onSettingsClosed(Runnable callback)  { this.onSettingsClosed = callback; }
+    
+    // Add inventory callback methods
+    public void onInventoryOpening(Runnable callback) { this.onInventoryOpening = callback; }
+    public void onInventoryClosed(Runnable callback)  { this.onInventoryClosed = callback; }
 
     // ── Font ──────────────────────────────────────────────────────────────────
 

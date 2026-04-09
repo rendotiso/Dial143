@@ -12,8 +12,8 @@ import Entities.Item;
 public class InventoryPanel extends JPanel {
 
     private static final int COLS      = 3;
-    private static final int ROWS      = 3;
-    private static final int MAX_SLOTS = COLS * ROWS;
+    private static final int ROWS      = 2;  // Changed from 3 to 2
+    private static final int MAX_SLOTS = COLS * ROWS;  // Now 6 slots (3x2)
 
     private final List<Item> items = new ArrayList<>();
 
@@ -40,15 +40,19 @@ public class InventoryPanel extends JPanel {
 
     public void setItems(List<Item> newItems) {
         this.items.clear();
-        this.items.addAll(newItems);
+        for (Item item : newItems) {
+            if (item.getQuantity() > 0) {
+                this.items.add(item);
+            }
+        }
         refreshGrid();
     }
 
     public void addItem(Item item) {
-        // If item already exists by name, just increment quantity
         for (Item existing : items) {
             if (existing.getName().equals(item.getName())) {
                 existing.addQuantity(item.getQuantity());
+                System.out.println("Stacked " + item.getName() + ", new quantity: " + existing.getQuantity());
                 refreshGrid();
                 return;
             }
@@ -57,9 +61,24 @@ public class InventoryPanel extends JPanel {
         refreshGrid();
     }
 
-    public List<Item> getItems() { return items; }
-
+    public List<Item> getItems() { 
+        return items; 
+    }
+    
+    public boolean isEmpty() {
+        return items.isEmpty();
+    }
+    
+    public int getTotalItemCount() {
+        return items.stream().mapToInt(Item::getQuantity).sum();
+    }
+    
+    public void clear() {
+        items.clear();
+        refreshGrid();
+    }
     public void showAsPopup() {
+        // Pause timer when opening inventory
         if (onInventoryOpening != null) onInventoryOpening.run();
 
         dialog = new JDialog(owner, "Inventory", Dialog.ModalityType.APPLICATION_MODAL);
@@ -69,24 +88,32 @@ public class InventoryPanel extends JPanel {
         dialog.setLocationRelativeTo(owner);
         dialog.setAlwaysOnTop(true);
 
+        // Add window listener to detect when dialog is closing
+        dialog.addWindowListener(new WindowAdapter() {
+            @Override
+            public void windowClosing(WindowEvent e) {
+                // Resume timer when inventory closes
+                if (onInventoryClosed != null) onInventoryClosed.run();
+            }
+        });
+
         dialog.addKeyListener(new KeyAdapter() {
-            @Override public void keyPressed(KeyEvent e) {
+            @Override 
+            public void keyPressed(KeyEvent e) {
                 if (e.getKeyCode() == KeyEvent.VK_ESCAPE) hidePopup();
             }
         });
         dialog.setFocusable(true);
         dialog.setVisible(true);
-
-        if (onInventoryClosed != null) onInventoryClosed.run();
     }
 
     public void hidePopup() {
         if (dialog != null && dialog.isVisible()) {
             dialog.dispose();
             dialog = null;
+            if (onInventoryClosed != null) onInventoryClosed.run();
         }
     }
-
     private void buildUI() {
         setLayout(new BorderLayout());
 
@@ -125,16 +152,21 @@ public class InventoryPanel extends JPanel {
     private void refreshGrid() {
         if (gridPanel == null) return;
         gridPanel.removeAll();
+      
+        
         for (int i = 0; i < MAX_SLOTS; i++) {
-            if (i < items.size()) gridPanel.add(makeItemSlot(items.get(i)));
-            else                  gridPanel.add(makeEmptySlot());
+            if (i < items.size()) {
+                gridPanel.add(makeItemSlot(items.get(i)));
+            } else {
+                gridPanel.add(makeEmptySlot());
+            }
         }
         gridPanel.revalidate();
         gridPanel.repaint();
     }
 
     private JPanel makeItemSlot(Item item) {
-        JPanel slot = new JPanel(new BorderLayout(0, 4)) {
+        JPanel slot = new JPanel(new BorderLayout(0, 2)) {  // Reduced gap from 4 to 2
             private boolean hovered = false;
             {
                 setOpaque(true);
@@ -169,23 +201,26 @@ public class InventoryPanel extends JPanel {
                 }
             }
         };
-        iconLabel.setPreferredSize(new Dimension(64, 64));
-        iconLabel.setIcon(item.getIcon(56, 56));
+        iconLabel.setPreferredSize(new Dimension(256, 256));
+        iconLabel.setIcon(item.getIcon(80, 80));
         iconLabel.setOpaque(false);
 
         JLabel nameLabel = new JLabel(item.getName(), SwingConstants.CENTER);
         nameLabel.setForeground(Color.DARK_GRAY);
-        nameLabel.setFont(loadFont(11f, Font.PLAIN));
+        nameLabel.setFont(loadFont(14f, Font.BOLD));
 
         JLabel qtyLabel = new JLabel("x" + item.getQuantity(), SwingConstants.CENTER);
         qtyLabel.setForeground(item.hasStock()
             ? new Color(30, 140, 60) : new Color(180, 40, 40));
-        qtyLabel.setFont(loadFont(11f, Font.BOLD));
+        qtyLabel.setFont(loadFont(14f, Font.BOLD));
 
-        JPanel south = new JPanel(new GridLayout(2, 1, 0, 1));
+        JPanel south = new JPanel(new GridLayout(2, 1, 0, 0));  // Reduced gap from 1 to 0
         south.setOpaque(false);
         south.add(nameLabel);
         south.add(qtyLabel);
+        
+        // Add a small empty border to push content up slightly
+        south.setBorder(BorderFactory.createEmptyBorder(-4, 0, 0, 0));
 
         slot.add(iconLabel, BorderLayout.CENTER);
         slot.add(south,     BorderLayout.SOUTH);
@@ -206,7 +241,9 @@ public class InventoryPanel extends JPanel {
 
     private void openDetail(Item item) {
         detailPanel.setItem(item);
-        detailPanel.onItemUsed(this::refreshGrid);
+        detailPanel.onItemUsed(() -> {
+            refreshGrid();
+        });
         detailPanel.setOnEffect((effectType, effectValue) -> {
             if (onItemEffect != null) onItemEffect.onEffect(effectType, effectValue);
         });
@@ -258,40 +295,4 @@ public class InventoryPanel extends JPanel {
     @Override public Dimension getMinimumSize()   { return new Dimension(540, 500); }
     @Override public Dimension getMaximumSize()   { return new Dimension(540, 500); }
     @Override public Dimension getPreferredSize() { return new Dimension(540, 500); }
-
-    
-    
-    /**
-     * This method is called from within the constructor to initialize the form.
-     * WARNING: Do NOT modify this code. The content of this method is always
-     * regenerated by the Form Editor.
-     */
-    @SuppressWarnings("unchecked")
-    // <editor-fold defaultstate="collapsed" desc="Generated Code">//GEN-BEGIN:initComponents
-    private void initComponents() {
-
-        jLabel4 = new javax.swing.JLabel();
-
-        javax.swing.GroupLayout layout = new javax.swing.GroupLayout(this);
-        this.setLayout(layout);
-        layout.setHorizontalGroup(
-            layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGroup(layout.createSequentialGroup()
-                .addGap(217, 217, 217)
-                .addComponent(jLabel4)
-                .addContainerGap(290, Short.MAX_VALUE))
-        );
-        layout.setVerticalGroup(
-            layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGroup(layout.createSequentialGroup()
-                .addContainerGap(330, Short.MAX_VALUE)
-                .addComponent(jLabel4)
-                .addGap(109, 109, 109))
-        );
-    }// </editor-fold>//GEN-END:initComponents
-
-
-    // Variables declaration - do not modify//GEN-BEGIN:variables
-    private javax.swing.JLabel jLabel4;
-    // End of variables declaration//GEN-END:variables
 }

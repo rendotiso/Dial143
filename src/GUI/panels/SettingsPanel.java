@@ -13,8 +13,7 @@ public class SettingsPanel extends JPanel {
     private String         previousScreen  = "shift";
     private WindowListener currentListener;
     private boolean        isHiding        = false;
-
-    // ── Palette ───────────────────────────────────────────────────────────────
+    
     private static final Color BG_WHITE     = Color.WHITE;
     private static final Color BORDER_COLOR = new Color(210, 215, 230);
     private static final Color TEXT_PRIMARY = new Color(30,  40,  80);
@@ -34,18 +33,14 @@ public class SettingsPanel extends JPanel {
         buildUI();
     }
 
-    // ── Public API ────────────────────────────────────────────────────────────
-
     public void setPreviousScreen(String screen) { this.previousScreen = screen; }
 
-    /** Apply the same image to all three buttons. */
     public void setButtonImage(String filename) {
         btnContinue.setImage(filename);
         btnSaves.setImage(filename);
         btnExit.setImage(filename);
     }
 
-    /** Apply individual images per button; pass null to keep the default style. */
     public void setButtonImages(String continueFile, String savesFile, String exitFile) {
         if (continueFile != null) btnContinue.setImage(continueFile);
         if (savesFile    != null) btnSaves.setImage(savesFile);
