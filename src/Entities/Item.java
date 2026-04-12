@@ -13,11 +13,8 @@ public class Item {
     private String   iconPath;  
     private int      quantity;
     private int      price;
-    private ItemType type;
     private EffectType effectType;
     private int      effectValue;
-
-    public enum ItemType   { CONSUMABLE, COSMETIC, SPECIAL }
 
     public enum EffectType {
         PP_MULTIPLIER,     
@@ -29,47 +26,40 @@ public class Item {
     }
 
     public Item(String name, String description, String iconPath,
-                int quantity, int price, ItemType type,
-                EffectType effectType, int effectValue) {
+                int quantity, int price, EffectType effectType, int effectValue) {
         this.name        = name;
         this.description = description;
         this.iconPath    = iconPath;
         this.quantity    = quantity;
         this.price       = price;
-        this.type        = type;
         this.effectType  = effectType;
         this.effectValue = effectValue;
     }
 
     public Item(String name, String description, String iconPath,
-                int quantity, int price, ItemType type) {
-        this(name, description, iconPath, quantity, price, type, EffectType.NONE, 0);
+                int quantity, int price) {
+        this(name, description, iconPath, quantity, price, EffectType.NONE, 0);
     }
     
     public Item(String name, String description, String iconPath, int quantity) {
-        this(name, description, iconPath, quantity, 0, ItemType.CONSUMABLE, EffectType.NONE, 0);
+        this(name, description, iconPath, quantity, 0, EffectType.NONE, 0);
     }
-
-    // ── Getters ───────────────────────────────────────────────────────────────
+    
     public String     getName()        { return name; }
     public String     getDescription() { return description; }
     public String     getIconPath()    { return iconPath; }
     public int        getQuantity()    { return quantity; }
     public int        getPrice()       { return price; }
-    public ItemType   getType()        { return type; }
     public EffectType getEffectType()  { return effectType; }
     public int        getEffectValue() { return effectValue; }
     public boolean    hasStock()       { return quantity > 0; }
 
-    // ── Setters ───────────────────────────────────────────────────────────────
     public void setName(String name)     { this.name = name; }
     public void setDescription(String d) { this.description = d; }
     public void setIconPath(String p)    { this.iconPath = p; }
     public void setQuantity(int q)       { this.quantity = Math.max(0, q); }
     public void setPrice(int price)      { this.price = price; }
-    public void setType(ItemType type)   { this.type = type; }
 
-    // ── Helpers ───────────────────────────────────────────────────────────────
     public boolean use() {
         if (quantity <= 0) return false;
         quantity--;
@@ -77,6 +67,7 @@ public class Item {
     }
 
     public void addQuantity(int amount) { this.quantity += amount; }
+    
     public ImageIcon getIcon(int width, int height) {
         if (iconPath == null || iconPath.isEmpty()) return null;
         try {
@@ -89,10 +80,5 @@ public class Item {
         } catch (Exception e) {
             return null;
         }
-    }
-
-    @Override
-    public String toString() {
-        return "Item{name='" + name + "', qty=" + quantity + ", price=" + price + "}";
     }
 }

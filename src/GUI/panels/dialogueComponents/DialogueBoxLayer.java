@@ -95,7 +95,7 @@ public class DialogueBoxLayer extends JPanel {
         isSpeedActive = true;
         if (speedBtn != null) {
             speedBtn.setText("■");
-            speedBtn.setForeground(new Color(180, 50, 50)); // Red when active
+            speedBtn.setForeground(new Color(180, 50, 50));
         }
         
         speedTimer = new Timer(80, e -> {

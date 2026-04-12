@@ -32,18 +32,22 @@ public class ItemLayer extends JPanel {
         buildUI();
     }
 
-    public void setItem(Item item)                        { this.item = item; refresh(); }
-    public void onItemUsed(Runnable callback)             { this.onItemUsed = callback; }
-    public void setOnEffect(ItemEffectListener listener)  { this.onEffect   = listener; }
+    public void setItem(Item item)                       { this.item = item; refresh(); }
+    public void onItemUsed(Runnable callback)            { this.onItemUsed = callback; }
+    public void setOnEffect(ItemEffectListener listener) { this.onEffect   = listener; }
 
-    public void showAsPopup(JFrame owner) {
-        dialog = new JDialog(owner, "Use Item?", Dialog.ModalityType.APPLICATION_MODAL);
+    public void showAsPopup(Window parentWindow) {
+        dialog = new JDialog(parentWindow, "Use Item?", Dialog.ModalityType.APPLICATION_MODAL);
         dialog.setUndecorated(true);
         dialog.setContentPane(this);
         dialog.pack();
-        dialog.setLocationRelativeTo(owner);
+        dialog.setLocationRelativeTo(parentWindow);
         dialog.setAlwaysOnTop(true);
         dialog.setVisible(true);
+    }
+
+    public void showAsPopup(JFrame owner) {
+        showAsPopup((Window) owner);
     }
 
     public void hidePopup() {
@@ -53,10 +57,11 @@ public class ItemLayer extends JPanel {
         }
     }
 
+    // ── UI ────────────────────────────────────────────────────────────────────
+
     private void buildUI() {
         setLayout(new BorderLayout());
 
-        // ── White card wrapper ────────────────────────────────────────────────
         JPanel wrapper = new JPanel() {
             @Override protected void paintComponent(Graphics g) {
                 Graphics2D g2 = (Graphics2D) g.create();
@@ -73,7 +78,6 @@ public class ItemLayer extends JPanel {
         wrapper.setLayout(new BoxLayout(wrapper, BoxLayout.Y_AXIS));
         wrapper.setBorder(BorderFactory.createEmptyBorder(22, 28, 20, 28));
 
-        // ── "Use Item?" ───────────────────────────────────────────────────────
         JLabel prompt = new JLabel("Use Item?", SwingConstants.CENTER);
         prompt.setForeground(new Color(30, 40, 80));
         prompt.setFont(loadFont(16f, Font.BOLD));
@@ -81,11 +85,9 @@ public class ItemLayer extends JPanel {
         wrapper.add(prompt);
         wrapper.add(Box.createVerticalStrut(14));
 
-        // ── Divider ───────────────────────────────────────────────────────────
         wrapper.add(makeDivider());
         wrapper.add(Box.createVerticalStrut(14));
 
-        // ── Icon ──────────────────────────────────────────────────────────────
         lblIcon = new JLabel("", SwingConstants.CENTER) {
             @Override protected void paintComponent(Graphics g) {
                 if (getIcon() == null) {
@@ -111,7 +113,6 @@ public class ItemLayer extends JPanel {
         wrapper.add(lblIcon);
         wrapper.add(Box.createVerticalStrut(12));
 
-        // ── Item name ─────────────────────────────────────────────────────────
         lblName = new JLabel("", SwingConstants.CENTER);
         lblName.setForeground(new Color(30, 40, 80));
         lblName.setFont(loadFont(15f, Font.BOLD));
@@ -119,11 +120,9 @@ public class ItemLayer extends JPanel {
         wrapper.add(lblName);
         wrapper.add(Box.createVerticalStrut(8));
 
-        // ── Divider ───────────────────────────────────────────────────────────
         wrapper.add(makeDivider());
         wrapper.add(Box.createVerticalStrut(10));
 
-        // ── Description ───────────────────────────────────────────────────────
         lblDescription = new JLabel("", SwingConstants.CENTER);
         lblDescription.setForeground(new Color(60, 70, 100));
         lblDescription.setFont(loadFont(12f, Font.PLAIN));
@@ -131,7 +130,6 @@ public class ItemLayer extends JPanel {
         wrapper.add(lblDescription);
         wrapper.add(Box.createVerticalStrut(6));
 
-        // ── Effect ────────────────────────────────────────────────────────────
         lblEffect = new JLabel("", SwingConstants.CENTER);
         lblEffect.setForeground(new Color(45, 110, 70));
         lblEffect.setFont(loadFont(12f, Font.BOLD));
@@ -139,7 +137,6 @@ public class ItemLayer extends JPanel {
         wrapper.add(lblEffect);
         wrapper.add(Box.createVerticalStrut(5));
 
-        // ── Quantity ──────────────────────────────────────────────────────────
         lblQuantity = new JLabel("", SwingConstants.CENTER);
         lblQuantity.setForeground(new Color(130, 140, 160));
         lblQuantity.setFont(loadFont(11f, Font.PLAIN));
@@ -147,11 +144,9 @@ public class ItemLayer extends JPanel {
         wrapper.add(lblQuantity);
         wrapper.add(Box.createVerticalStrut(14));
 
-        // ── Divider ───────────────────────────────────────────────────────────
         wrapper.add(makeDivider());
         wrapper.add(Box.createVerticalStrut(14));
 
-        // ── Buttons ───────────────────────────────────────────────────────────
         JPanel btnRow = new JPanel(new GridLayout(1, 2, 10, 0));
         btnRow.setOpaque(false);
         btnRow.setMaximumSize(new Dimension(Integer.MAX_VALUE, 38));
@@ -170,7 +165,6 @@ public class ItemLayer extends JPanel {
         add(wrapper, BorderLayout.CENTER);
     }
 
-    /** Thin horizontal rule matching the card's inner width */
     private JPanel makeDivider() {
         JPanel line = new JPanel() {
             @Override protected void paintComponent(Graphics g) {
@@ -184,27 +178,49 @@ public class ItemLayer extends JPanel {
         return line;
     }
 
-    private void handleUse() {
-        if (item == null) return;
-        if (!item.hasStock()) {
-            JOptionPane.showMessageDialog(this,
-                "No more " + item.getName() + " left!",
-                "Out of Stock", JOptionPane.WARNING_MESSAGE);
-            return;
-        }
-        item.use();
-        if (onEffect != null) onEffect.onEffect(item.getEffectType(), item.getEffectValue());
-        refresh();
-        if (onItemUsed != null) onItemUsed.run();
-        hidePopup();
-    }
+    // ── Use logic ─────────────────────────────────────────────────────────────
+
+        private void handleUse() {
+         if (item == null) {
+             System.out.println("ERROR: No item selected");
+             return;
+         }
+
+         System.out.println("=== ITEMLAYER.handleUse() ===");
+         System.out.println("  Item: " + item.getName());
+         System.out.println("  Effect Type: " + item.getEffectType());
+         System.out.println("  Effect Value: " + item.getEffectValue());
+         System.out.println("  Current Quantity: " + item.getQuantity());
+
+         if (!item.hasStock()) {
+             JOptionPane.showMessageDialog(this,
+                 "No more " + item.getName() + " left!",
+                 "Out of Stock", JOptionPane.WARNING_MESSAGE);
+             return;
+         }
+
+         item.use();
+         System.out.println("  New Quantity: " + item.getQuantity());
+
+         // Send effect to listener
+         if (onEffect != null) {
+             System.out.println("  Sending effect to listener...");
+             onEffect.onEffect(item.getEffectType(), item.getEffectValue());
+             System.out.println("  Effect sent successfully");
+         } else {
+             System.out.println("  ERROR: No effect listener registered in ItemLayer!");
+         }
+
+         refresh();
+         if (onItemUsed != null) onItemUsed.run();
+         hidePopup();
+     }
 
     private void refresh() {
         if (item == null) return;
 
         lblName.setText(item.getName());
 
-        // HTML-centered description, constrained width so it wraps neatly
         String desc = item.getDescription().replace("\n", "<br>");
         lblDescription.setText(
             "<html><div style='text-align:center;width:220px;'>" + desc + "</div></html>");
@@ -235,6 +251,8 @@ public class ItemLayer extends JPanel {
             case NONE                -> "";
         };
     }
+
+    // ── Button factory ────────────────────────────────────────────────────────
 
     private JButton makeButton(String text, Color bg, Color hover) {
         JButton btn = new JButton(text) {

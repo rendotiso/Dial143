@@ -1,10 +1,12 @@
 package GUI.panels;
 
 import javax.swing.*;
+import javax.swing.event.ChangeListener;
 import java.awt.*;
 import java.awt.event.*;
 import java.io.InputStream;
 import GUI.panels.universalComponents.ImageButtonCreation;
+import Entities.AudioPlayer;
 
 public class SettingsPanel extends JPanel {
 
@@ -13,22 +15,30 @@ public class SettingsPanel extends JPanel {
     private String         previousScreen  = "shift";
     private WindowListener currentListener;
     private boolean        isHiding        = false;
-    
+
     private static final Color BG_WHITE     = Color.WHITE;
     private static final Color BORDER_COLOR = new Color(210, 215, 230);
     private static final Color TEXT_PRIMARY = new Color(30,  40,  80);
+    private static final Color MUTED_COLOR  = new Color(200, 60,  60);
 
     private Font titleFont;
     private Font btnFont;
+    private Font labelFont;
 
     private ImageButtonCreation btnContinue;
     private ImageButtonCreation btnSaves;
     private ImageButtonCreation btnExit;
 
+    // ── Audio controls ────────────────────────────────────────────────────────
+    private JSlider  volumeSlider;
+    private JButton  muteButton;
+    private JLabel   volumeLabel;
+    private boolean  updatingSlider = false; 
+
     public SettingsPanel(MainFrame mainFrame) {
         this.mainFrame = mainFrame;
         loadFonts();
-        setPreferredSize(new Dimension(300, 340));
+        setPreferredSize(new Dimension(300, 440)); 
         setOpaque(false);
         buildUI();
     }
@@ -51,6 +61,8 @@ public class SettingsPanel extends JPanel {
         if (isHiding) return;
         this.currentListener = listener;
         if (dialog != null && dialog.isVisible()) dialog.dispose();
+
+        syncAudioControls();
 
         dialog = new JDialog(mainFrame, "Settings", Dialog.ModalityType.APPLICATION_MODAL);
         dialog.setUndecorated(true);
@@ -83,6 +95,26 @@ public class SettingsPanel extends JPanel {
         }
     }
 
+    // ── Sync slider/button to AudioPlayer state ───────────────────────────────
+
+    private void syncAudioControls() {
+        AudioPlayer audio = AudioPlayer.getInstance();
+        updatingSlider = true;
+        volumeSlider.setValue((int)(audio.getVolume() * 100));
+        updatingSlider = false;
+        updateMuteButton(audio.isMuted());
+        updateVolumeLabel(audio.getVolume(), audio.isMuted());
+    }
+
+    private void updateMuteButton(boolean muted) {
+        muteButton.setText(muted ? "Unmute" : "Mute");
+        muteButton.setForeground(muted ? MUTED_COLOR : TEXT_PRIMARY);
+    }
+
+    private void updateVolumeLabel(float volume, boolean muted) {
+        volumeLabel.setText(muted ? "Volume: muted" : "Volume: " + (int)(volume * 100) + "%");
+    }
+
     // ── UI ────────────────────────────────────────────────────────────────────
 
     private void buildUI() {
@@ -110,7 +142,12 @@ public class SettingsPanel extends JPanel {
         title.setBorder(BorderFactory.createEmptyBorder(35, 0, 20, 0));
         wrapper.add(title, BorderLayout.NORTH);
 
-        // ── Buttons ───────────────────────────────────────────────────────────
+        // ── Center: buttons + audio ───────────────────────────────────────────
+        JPanel centerStack = new JPanel();
+        centerStack.setOpaque(false);
+        centerStack.setLayout(new BoxLayout(centerStack, BoxLayout.Y_AXIS));
+
+        // Navigation buttons
         btnContinue = new ImageButtonCreation("Continue");
         btnSaves    = new ImageButtonCreation("Save / Load");
         btnExit     = new ImageButtonCreation("Exit to Title");
@@ -128,20 +165,79 @@ public class SettingsPanel extends JPanel {
         btnSaves.addActionListener(e -> { hidePopup(); mainFrame.showSave(previousScreen); });
         btnExit.addActionListener(e  -> { hidePopup(); mainFrame.showScreen("title"); });
 
-        JPanel btnStack = new JPanel();
-        btnStack.setOpaque(false);
-        btnStack.setLayout(new BoxLayout(btnStack, BoxLayout.Y_AXIS));
-        btnStack.add(btnContinue);
-        btnStack.add(Box.createVerticalStrut(12));
-        btnStack.add(btnSaves);
-        btnStack.add(Box.createVerticalStrut(12));
-        btnStack.add(btnExit);
+        centerStack.add(btnContinue);
+        centerStack.add(Box.createVerticalStrut(12));
+        centerStack.add(btnSaves);
+        centerStack.add(Box.createVerticalStrut(12));
+        centerStack.add(btnExit);
 
+        // ── Divider ───────────────────────────────────────────────────────────
+        centerStack.add(Box.createVerticalStrut(20));
+        JSeparator sep = new JSeparator(SwingConstants.HORIZONTAL);
+        sep.setForeground(BORDER_COLOR);
+        sep.setMaximumSize(new Dimension(212, 1));
+        sep.setAlignmentX(Component.CENTER_ALIGNMENT);
+        centerStack.add(sep);
+        centerStack.add(Box.createVerticalStrut(14));
+
+        // ── Volume label ──────────────────────────────────────────────────────
+        volumeLabel = new JLabel("Volume: " + (int)(AudioPlayer.getInstance().getVolume() * 100) + "%");
+        volumeLabel.setFont(labelFont);
+        volumeLabel.setForeground(TEXT_PRIMARY);
+        volumeLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
+        centerStack.add(volumeLabel);
+        centerStack.add(Box.createVerticalStrut(6));
+
+        // ── Volume slider ─────────────────────────────────────────────────────
+        volumeSlider = new JSlider(0, 100, (int)(AudioPlayer.getInstance().getVolume() * 100));
+        volumeSlider.setOpaque(false);
+        volumeSlider.setMaximumSize(new Dimension(212, 30));
+        volumeSlider.setPreferredSize(new Dimension(212, 30));
+        volumeSlider.setAlignmentX(Component.CENTER_ALIGNMENT);
+        volumeSlider.setForeground(TEXT_PRIMARY);
+
+        volumeSlider.addChangeListener(e -> {
+            if (updatingSlider) return;
+            float v = volumeSlider.getValue() / 100f;
+            AudioPlayer.getInstance().setVolume(v);
+            if (AudioPlayer.getInstance().isMuted() && volumeSlider.getValue() > 0) {
+                AudioPlayer.getInstance().setMuted(false);
+                updateMuteButton(false);
+            }
+            updateVolumeLabel(v, AudioPlayer.getInstance().isMuted());
+        });
+
+        centerStack.add(volumeSlider);
+        centerStack.add(Box.createVerticalStrut(10));
+
+        // ── Mute button ───────────────────────────────────────────────────────
+        muteButton = new JButton(AudioPlayer.getInstance().isMuted() ? "Unmute" : "Mute");
+        muteButton.setFont(labelFont);
+        muteButton.setForeground(TEXT_PRIMARY);
+        muteButton.setBackground(BG_WHITE);
+        muteButton.setBorder(BorderFactory.createLineBorder(BORDER_COLOR, 1));
+        muteButton.setFocusPainted(false);
+        muteButton.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+        muteButton.setPreferredSize(new Dimension(100, 30));
+        muteButton.setMaximumSize(new Dimension(100, 30));
+        muteButton.setAlignmentX(Component.CENTER_ALIGNMENT);
+
+        muteButton.addActionListener(e -> {
+            AudioPlayer audio = AudioPlayer.getInstance();
+            boolean nowMuted = !audio.isMuted();
+            audio.setMuted(nowMuted);
+            updateMuteButton(nowMuted);
+            updateVolumeLabel(audio.getVolume(), nowMuted);
+        });
+
+        centerStack.add(muteButton);
+
+        // ── Wrap in GridBagLayout to center horizontally ───────────────────────
         JPanel centerPanel = new JPanel(new GridBagLayout());
         centerPanel.setOpaque(false);
-        centerPanel.add(btnStack, new GridBagConstraints());
-
+        centerPanel.add(centerStack, new GridBagConstraints());
         wrapper.add(centerPanel, BorderLayout.CENTER);
+
         add(wrapper, BorderLayout.CENTER);
     }
 
@@ -157,9 +253,11 @@ public class SettingsPanel extends JPanel {
             w.put(java.awt.font.TextAttribute.WEIGHT, java.awt.font.TextAttribute.WEIGHT_BOLD);
             titleFont = base.deriveFont(w).deriveFont(18f);
             btnFont   = base.deriveFont(w).deriveFont(14f);
+            labelFont = base.deriveFont(12f);
         } catch (Exception ex) {
             titleFont = new Font("Georgia", Font.BOLD, 18);
             btnFont   = new Font("Georgia", Font.BOLD, 14);
+            labelFont = new Font("Georgia", Font.PLAIN, 12);
         }
     }
 }

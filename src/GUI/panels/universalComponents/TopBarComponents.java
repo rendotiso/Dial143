@@ -16,8 +16,8 @@ public class TopBarComponents extends JPanel {
 
     private Runnable onSettingsOpening;
     private Runnable onSettingsClosed;
-    private Runnable onInventoryOpening;  // Add this
-    private Runnable onInventoryClosed;   // Add this
+    private Runnable onInventoryOpening;
+    private Runnable onInventoryClosed;
 
     private javax.swing.JButton btnSettings;
     private javax.swing.JButton btnInventory;
@@ -28,8 +28,7 @@ public class TopBarComponents extends JPanel {
     private javax.swing.JLabel  salaryLabel;
     private javax.swing.JLabel  salaryValue;
     private javax.swing.JLabel  dayLabel;
-    
-    // ── Love Meter visibility flag ───────────────────────────────────────────
+
     private boolean loveMeterVisible = false;
 
     public TopBarComponents(MainFrame mainFrame) {
@@ -40,7 +39,6 @@ public class TopBarComponents extends JPanel {
         setLayout(null);
         setOpaque(false);
 
-        // ── Stat rows ─────────────────────────────────────────────────────────
         ppLabel = new JLabel("Performance:");
         ppLabel.setBounds(15, 10, 180, 30);
         ppLabel.setForeground(Color.WHITE);
@@ -54,7 +52,6 @@ public class TopBarComponents extends JPanel {
         ppValue.setFont(pixelFont != null ? pixelFont.deriveFont(18f) : new Font("Arial", Font.BOLD, 18));
         add(ppValue);
 
-        // Love Meter components - initially invisible
         lpLabel = new JLabel("Love Meter:");
         lpLabel.setBounds(15, 38, 130, 30);
         lpLabel.setForeground(Color.WHITE);
@@ -83,7 +80,6 @@ public class TopBarComponents extends JPanel {
         salaryValue.setFont(pixelFont != null ? pixelFont.deriveFont(18f) : new Font("Arial", Font.BOLD, 18));
         add(salaryValue);
 
-        // ── Day indicator — centered, pill background ─────────────────────────
         dayLabel = new JLabel("Day 1  |  Morning", SwingConstants.CENTER) {
             @Override protected void paintComponent(Graphics g) {
                 Graphics2D g2 = (Graphics2D) g.create();
@@ -110,7 +106,6 @@ public class TopBarComponents extends JPanel {
         dayLabel.setFont(pixelFont != null ? pixelFont.deriveFont(15f) : new Font("Arial", Font.BOLD, 15));
         add(dayLabel);
 
-        // ── Buttons ───────────────────────────────────────────────────────────
         btnInventory = new JButton();
         btnInventory.setBounds(1120, 15, 100, 35);
         btnInventory.setIcon(loadIcon("inventory icon.png", 80, 35));
@@ -133,48 +128,26 @@ public class TopBarComponents extends JPanel {
         setComponentZOrder(btnSettings,  6);
     }
 
-    // ── Love Meter Visibility Control ─────────────────────────────────────────
-    
-    /**
-     * Show or hide the Love Meter (LP) components.
-     * Love Meter should only appear starting from Day 3 Evening (when character route begins).
-     * 
-     * @param visible true to show Love Meter, false to hide it
-     */
+    // ── Love Meter ────────────────────────────────────────────────────────────
+
     public void setLoveMeterVisible(boolean visible) {
         this.loveMeterVisible = visible;
         lpLabel.setVisible(visible);
         lpValue.setVisible(visible);
-        
-        // Adjust the Y positions of salary components based on Love Meter visibility
         if (visible) {
-            // Love Meter is visible - salary stays at Y=66
             salaryLabel.setBounds(15, 66, 130, 30);
             salaryValue.setBounds(160, 66, 60, 30);
         } else {
-            // Love Meter is hidden - salary moves up to Y=38 to fill the gap
             salaryLabel.setBounds(15, 38, 130, 30);
             salaryValue.setBounds(160, 38, 60, 30);
         }
-        
-        // Force repaint of the background gradient area
         repaint();
     }
-    
-    /**
-     * Check if Love Meter is currently visible
-     */
-    public boolean isLoveMeterVisible() {
-        return loveMeterVisible;
-    }
-    
+
+    public boolean isLoveMeterVisible() { return loveMeterVisible; }
+
     public void updateLoveMeterVisibility(int currentDay, MainFrame.Segment segment) {
-        // Love Meter appears starting Day 3 Evening
-        // Day 1-2: No Love Meter (prologue, no route active)
-        // Day 3 Morning: Still no Love Meter (route hasn't started yet)
-        // Day 3 Evening: Love Meter appears (Amaya route begins)
         boolean shouldShow = false;
-        
         if (currentDay > 3) {
             shouldShow = true;
         } else if (currentDay == 3 && segment == MainFrame.Segment.EVENING) {
@@ -189,19 +162,14 @@ public class TopBarComponents extends JPanel {
         String location = switch (segment) {
             case MORNING -> "Morning";
             case EVENING -> "Evening";
-            case ENDING -> "Ending";
+            case ENDING  -> "Ending";
         };
         setDayInfo(day, location);
-        
         updateLoveMeterVisibility(day, segment);
     }
 
-    /**
-     * Update the day label for the shift panel (call center)
-     */
     public void updateForShift(int day) {
         setDayInfo(day, "Call Center");
-        
         updateLoveMeterVisibility(day, MainFrame.Segment.MORNING);
     }
 
@@ -214,7 +182,7 @@ public class TopBarComponents extends JPanel {
         setDayInfo(day, "Day Summary");
         updateLoveMeterVisibility(day, MainFrame.Segment.EVENING);
     }
-    
+
     public void setDayInfo(int day, String location) {
         dayLabel.setText("Day " + day + "  |  " + location);
         dayLabel.repaint();
@@ -229,20 +197,14 @@ public class TopBarComponents extends JPanel {
     protected void paintComponent(Graphics g) {
         Graphics2D g2 = (Graphics2D) g.create();
         g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-        
-        // Calculate gradient width based on whether Love Meter is visible
-        int gradientWidth = loveMeterVisible ? 220 : 200;
-        
+        int gradientWidth  = loveMeterVisible ? 220 : 200;
+        int gradientHeight = loveMeterVisible ? 105 : 80;
         GradientPaint gradient = new GradientPaint(
-            0,   0, new Color(0, 0, 0, 180),
+            0, 0, new Color(0, 0, 0, 180),
             gradientWidth, 0, new Color(0, 0, 0, 0)
         );
         g2.setPaint(gradient);
-        
-        // Adjust height based on Love Meter visibility
-        int gradientHeight = loveMeterVisible ? 105 : 80;
         g2.fillRect(0, 0, gradientWidth, gradientHeight);
-        
         g2.dispose();
         super.paintComponent(g);
     }
@@ -263,28 +225,11 @@ public class TopBarComponents extends JPanel {
         }
     }
 
-    // ── Settings / inventory wiring ───────────────────────────────────────────
+    // ── Settings wiring ───────────────────────────────────────────────────────
 
     public void setSettingsPanel(SettingsPanel settings) {
         this.settings = settings;
         setupSettingsButton();
-    }
-
-    public void setInventoryPanel(InventoryPanel inventory) {
-        this.inventory = inventory;
-        
-        // Wire up the inventory callbacks for timer pause/resume
-        if (inventory != null) {
-            inventory.onInventoryOpening(() -> {
-                if (onInventoryOpening != null) onInventoryOpening.run();
-            });
-            inventory.onInventoryClosed(() -> {
-                if (onInventoryClosed != null) onInventoryClosed.run();
-                refreshInventoryButton();
-            });
-        }
-        
-        refreshInventoryButton();
     }
 
     private void setupSettingsButton() {
@@ -292,24 +237,41 @@ public class TopBarComponents extends JPanel {
             btnSettings.removeActionListener(al);
         }
         btnSettings.addActionListener(e -> {
-            if (settings == null) {
-                System.err.println("SettingsPanel not set in TopBarComponents");
-                return;
-            }
+            if (settings == null) return;
             btnSettings.setEnabled(false);
-            if (onSettingsOpening != null) onSettingsOpening.run();
+            if (onSettingsOpening != null) onSettingsOpening.run(); // pause
             settings.setPreviousScreen(parentScreen);
-            settings.showAsPopup();
-            handleSettingsClosed();
-            if (onSettingsClosed != null) onSettingsClosed.run();
-        });
-    }
-
-    private void handleSettingsClosed() {
-        SwingUtilities.invokeLater(() -> {
+            settings.showAsPopup();                                 // blocks (modal)
+            // resumes here after settings closes
+            if (onSettingsClosed != null) onSettingsClosed.run();   // resume
             btnSettings.setEnabled(true);
             requestFocusInWindow();
         });
+    }
+
+    // ── Inventory wiring ──────────────────────────────────────────────────────
+
+    public void setInventoryPanel(InventoryPanel inventory) {
+        this.inventory = inventory;
+        refreshInventoryButton();
+    }
+
+    private void handleInventoryClick() {
+        if (inventory == null) return;
+        btnInventory.setEnabled(false);
+
+        // Fire pause BEFORE showAsPopup blocks the EDT — same pattern as settings
+        if (onInventoryOpening != null) onInventoryOpening.run();
+
+        // Blocks here (modal) until inventory dialog is disposed
+        inventory.showAsPopup();
+
+        // Resumes here after inventory is fully closed
+        if (onInventoryClosed != null) onInventoryClosed.run();
+
+        btnInventory.setEnabled(true);
+        refreshInventoryButton();
+        requestFocusInWindow();
     }
 
     public void refreshInventoryButton() {
@@ -325,24 +287,6 @@ public class TopBarComponents extends JPanel {
         }
     }
 
-    private void handleInventoryClick() {
-        if (inventory == null) {
-            System.err.println("InventoryPanel not set in TopBarComponents");
-            return;
-        }
-        
-        btnInventory.setEnabled(false);
-        
-        // Show inventory popup (timer pause/resume is handled inside InventoryPanel)
-        inventory.showAsPopup();
-        
-        SwingUtilities.invokeLater(() -> {
-            btnInventory.setEnabled(true);
-            refreshInventoryButton();
-            requestFocusInWindow();
-        });
-    }
-
     private void styleButton(JButton btn) {
         btn.setContentAreaFilled(false);
         btn.setBorderPainted(false);
@@ -351,16 +295,13 @@ public class TopBarComponents extends JPanel {
         btn.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
     }
 
-    // ── Callbacks / config ────────────────────────────────────────────────────
+    // ── Callbacks ─────────────────────────────────────────────────────────────
 
-    public void setParentScreen(String screenName)   { this.parentScreen = screenName; }
-    
-    public void onSettingsOpening(Runnable callback) { this.onSettingsOpening = callback; }
-    public void onSettingsClosed(Runnable callback)  { this.onSettingsClosed = callback; }
-    
-    // Add inventory callback methods
+    public void setParentScreen(String screenName)    { this.parentScreen = screenName; }
+    public void onSettingsOpening(Runnable callback)  { this.onSettingsOpening  = callback; }
+    public void onSettingsClosed(Runnable callback)   { this.onSettingsClosed   = callback; }
     public void onInventoryOpening(Runnable callback) { this.onInventoryOpening = callback; }
-    public void onInventoryClosed(Runnable callback)  { this.onInventoryClosed = callback; }
+    public void onInventoryClosed(Runnable callback)  { this.onInventoryClosed  = callback; }
 
     // ── Font ──────────────────────────────────────────────────────────────────
 
@@ -393,11 +334,11 @@ public class TopBarComponents extends JPanel {
     public void setLpValue(int points)     { lpValue.setText(String.valueOf(points)); }
     public void setSalaryValue(int points) { salaryValue.setText(String.valueOf(points)); }
 
-    public void setStats(int pp, int lp)     { setPpValue(pp); setLpValue(lp); }
-    public void addPpPoints(int points)      { setPpValue(getCurrentPpValue() + points); }
-    public void addLpPoints(int points)      { setLpValue(getCurrentLpValue() + points); }
-    public void addSalaryPoints(int points)  { setSalaryValue(getCurrentSalaryValue() + points); }
-    public void resetStats()                 { setPpValue(0); setLpValue(0); setSalaryValue(0); }
+    public void setStats(int pp, int lp)    { setPpValue(pp); setLpValue(lp); }
+    public void addPpPoints(int points)     { setPpValue(getCurrentPpValue() + points); }
+    public void addLpPoints(int points)     { setLpValue(getCurrentLpValue() + points); }
+    public void addSalaryPoints(int points) { setSalaryValue(getCurrentSalaryValue() + points); }
+    public void resetStats()                { setPpValue(0); setLpValue(0); setSalaryValue(0); }
 
     // ── Button accessors ──────────────────────────────────────────────────────
 

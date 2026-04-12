@@ -1,6 +1,7 @@
 package GUI.panels.shopComponents;
 
 import Entities.Item;
+import static Entities.Item.EffectType.TIMER_BOOST;
 import GUI.panels.universalComponents.ImageButtonCreation;
 import javax.swing.*;
 import java.awt.*;
@@ -152,27 +153,27 @@ public class ShopLayer extends JPanel {
         shopItems.add(new Item("Coffee",
             "A strong brew to sharpen focus.\n+10% PP earned for one full day.",
             "/GUI/resources/icons/coffee.png",
-            0, 80, Item.ItemType.CONSUMABLE, Item.EffectType.PP_MULTIPLIER, 10));
+            0, 80, Item.EffectType.PP_MULTIPLIER, 10));
         shopItems.add(new Item("Sticky Note",
             "A handy reminder on your desk.\nHighlights the best answer for one call.",
             "/GUI/resources/icons/stickynotes.png",
-            0, 120, Item.ItemType.CONSUMABLE, Item.EffectType.HINT_PER_CALL, 1));
+            0, 120, Item.EffectType.HINT_PER_CALL, 1));
         shopItems.add(new Item("Clock",
             "A trusty desk clock to buy you time.\n+10 seconds added to one call timer.",
             "/GUI/resources/icons/clock.png",
-            0, 150, Item.ItemType.CONSUMABLE, Item.EffectType.TIMER_BOOST, 10));
+            0, 150, Item.EffectType.TIMER_BOOST, 10)); 
         shopItems.add(new Item("Chocolate",
             "A sweet treat for someone special.\nGrants +5 Love Points instantly.",
             "/GUI/resources/icons/chocolit.png",
-            0, 200, Item.ItemType.CONSUMABLE, Item.EffectType.LP_FLAT, 5));
+            0, 200, Item.EffectType.LP_FLAT, 5));
         shopItems.add(new Item("Desk Plant",
             "A little green companion for their desk.\nPassively grants +5% LP each day.",
             "/GUI/resources/icons/plant.png",
-            0, 350, Item.ItemType.SPECIAL, Item.EffectType.LP_MULTIPLIER_DAILY, 5));
+            0, 350, Item.EffectType.LP_MULTIPLIER_DAILY, 5));
         shopItems.add(new Item("Book",
             "A thoughtful read picked just for them.\nGrants +10 Love Points instantly.",
             "/GUI/resources/icons/book.png",
-            0, 300, Item.ItemType.CONSUMABLE, Item.EffectType.LP_FLAT, 10));
+            0, 300, Item.EffectType.LP_FLAT, 10));
     }
 
     // ── Interaction ───────────────────────────────────────────────────────────

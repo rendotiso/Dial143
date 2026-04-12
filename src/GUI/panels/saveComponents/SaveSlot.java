@@ -3,10 +3,6 @@ package GUI.panels.saveComponents;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 
-/**
- * Holds data for one save slot.
- * In a real implementation this would serialize to disk.
- */
 public class SaveSlot {
 
     public static final int SLOT_COUNT = 3;

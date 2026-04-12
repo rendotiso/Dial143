@@ -86,11 +86,7 @@ public class ChoiceButtonLayer extends JPanel {
                 }
                 setVisible(false);
             });
-        } else {
-            btn.addActionListener(e -> {
-                System.out.println("This choice is locked!");
-            });
-        }
+        } 
         
         choiceButtons.add(btn);
         add(btn);

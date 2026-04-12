@@ -4,6 +4,7 @@ import GUI.panels.universalComponents.BackgroundLayer;
 import GUI.panels.titleScreenComponents.*;
 import javax.swing.*;
 import java.awt.*;
+import Entities.AudioPlayer;
  
 public class TitleScreenPanel extends JPanel {
  
@@ -13,6 +14,7 @@ public class TitleScreenPanel extends JPanel {
  
     public TitleScreenPanel(MainFrame mainPanel) {
         this.mainPanel = mainPanel;
+        AudioPlayer.getInstance().play(AudioPlayer.Track.INTRO);
         initComponents();
         initializeLayers();
     }

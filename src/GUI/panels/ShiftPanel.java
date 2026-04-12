@@ -1,22 +1,23 @@
 package GUI.panels;
-
+ 
 import GUI.panels.universalComponents.BackgroundLayer;
 import GUI.panels.universalComponents.TopBarComponents;
-import GUI.panels.shiftComponents.CallDialogueBoxLayer;
+import GUI.panels.shiftComponents.CallCreationTimer;
 import GUI.panels.InventoryPanel;
 import Entities.Item;
-import Entities.ActiveEffects;
+import Entities.ItemUse;
 import javax.swing.*;
 import java.awt.*;
-
+ 
 public class ShiftPanel extends JPanel {
-
-    private final MainFrame          mainPanel;
-    private final SettingsPanel      settings;
-    private final InventoryPanel     inventory;
-    private BackgroundLayer          bg;
-    private CallDialogueBoxLayer     callBox;
-    private TopBarComponents         topBar;
+ 
+    private final MainFrame      mainPanel;
+    private final SettingsPanel  settings;
+    private final InventoryPanel inventory;
+    private BackgroundLayer      bg;
+    private CallCreationTimer    callBox;
+    private TopBarComponents     topBar;
+    private ItemUse              itemEffect;
 
     public ShiftPanel(MainFrame mainPanel, SettingsPanel sharedSettings, InventoryPanel inventory) {
         this.mainPanel = mainPanel;
@@ -26,66 +27,77 @@ public class ShiftPanel extends JPanel {
         setLayout(new OverlayLayout(this));
         initializeLayers();
     }
-
+ 
     private void initializeLayers() {
         bg = new BackgroundLayer();
         bg.setBackgroundFromFile("MorningOffice.jpg");
-
+ 
+        callBox = new CallCreationTimer();
         topBar = new TopBarComponents(mainPanel);
-        topBar.setSettingsPanel(settings);
-        topBar.setParentScreen("shift");
-        topBar.setInventoryPanel(inventory);
-
-        inventory.setOnItemEffect((effectType, effectValue) -> {
-            ActiveEffects fx = mainPanel.getActiveEffects();
-            if (effectType == Item.EffectType.LP_FLAT) {
-                String activeChar = mainPanel.getRouteManager().hasActiveRoute()
-                    ? mainPanel.getRouteManager().getActiveCharacter() : null;
-                if (activeChar != null) {
-                    mainPanel.getRouteManager().addCharacterLP(activeChar, effectValue);
-                    topBar.addLpPoints(effectValue);
-                }
-            } else {
-                fx.apply(effectType, effectValue);
-            }
-        });
-
-    topBar.onSettingsOpening(() -> callBox.pauseTimer());
-    topBar.onSettingsClosed(() -> {
-        saveStats();
-        callBox.resumeTimer();
-    });
-
-    topBar.onInventoryOpening(() -> callBox.pauseTimer());
-    topBar.onInventoryClosed(() -> { 
-        saveStats(); 
-        callBox.resumeTimer();
-    });  // Fixed: Added missing closing parenthesis and semicolon
-
-        callBox = new CallDialogueBoxLayer();
+        
+        itemEffect = new ItemUse(mainPanel, topBar, callBox);
+ 
         callBox.onPointsAwarded((pp, salary) -> {
-            topBar.addPpPoints(pp);
+            int originalPP = pp;
+            int boostedPP = itemEffect.applyPPMultiplier(pp);
+
+            topBar.addPpPoints(boostedPP);
             topBar.addSalaryPoints(salary);
         });
 
         callBox.onCallComplete(() -> {
+            itemEffect.resetPerCall();
+ 
             if (callBox.hasMoreCalls()) {
-                Timer timer = new Timer(100, e -> callBox.loadTest());
-                timer.setRepeats(false);
-                timer.start();
+                Timer t = new Timer(100, e -> {
+                    callBox.loadTest();
+                    
+                    if (itemEffect.isHintAvailable()) {
+                        callBox.activateHint();
+                    }
+                });
+                t.setRepeats(false);
+                t.start();
             } else {
                 saveStats();
-                Timer timer = new Timer(100, e -> mainPanel.onCallComplete());
-                timer.setRepeats(false);
-                timer.start();
+                Timer t = new Timer(100, e -> mainPanel.onCallComplete());
+                t.setRepeats(false);
+                t.start();
             }
         });
-
+ 
+        topBar.setSettingsPanel(settings);
+        topBar.setParentScreen("shift");
+        topBar.setInventoryPanel(inventory);
+ 
+        topBar.onSettingsOpening(() -> callBox.pauseTimer());
+        topBar.onSettingsClosed(() -> {
+            saveStats();
+            callBox.resumeTimer();
+        });
+ 
+        topBar.onInventoryOpening(() -> callBox.pauseTimer());
+        topBar.onInventoryClosed(() -> {
+            saveStats();
+            callBox.resumeTimer();
+            if (itemEffect.isHintAvailable()) { 
+                callBox.activateHint();
+            }
+        });
+        
+        inventory.setOnItemEffect((effectType, effectValue) -> {
+            itemEffect.handleItemEffect(effectType, effectValue);
+        });
+ 
         add(topBar);
         add(callBox);
         add(bg);
     }
-
+    
+    public ItemUse getItemUse() {
+    return itemEffect;
+}
+ 
     public void loadCall() {
         topBar.updateForShift(mainPanel.getCurrentDay());
         topBar.setPpValue(mainPanel.getPP());
@@ -93,17 +105,22 @@ public class ShiftPanel extends JPanel {
         topBar.setSalaryValue(mainPanel.getSalary());
         callBox.resetRemainingCalls();
         callBox.loadTest();
+        
+        if (itemEffect.isHintAvailable()) {  
+            callBox.activateHint();
+        }
     }
-
+ 
     private void saveStats() {
         mainPanel.setPP(topBar.getCurrentPpValue());
         mainPanel.setLP(topBar.getCurrentLpValue());
         mainPanel.setSalary(topBar.getCurrentSalaryValue());
     }
-
+ 
     public void pauseTimer()       { callBox.pauseTimer(); }
     public void resumeTimer()      { callBox.resumeTimer(); }
     public boolean isTimerPaused() { return callBox.isTimerPaused(); }
+
     
     @SuppressWarnings("unchecked")
     // <editor-fold defaultstate="collapsed" desc="Generated Code">//GEN-BEGIN:initComponents

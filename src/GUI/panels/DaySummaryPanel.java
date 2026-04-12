@@ -2,8 +2,7 @@ package GUI.panels;
 
 import GUI.panels.universalComponents.*;
 import GUI.panels.InventoryPanel;
-import Entities.Item;
-import Entities.ActiveEffects;
+import Entities.*;
 import java.awt.Dimension;
 import javax.swing.JPanel;
 import javax.swing.OverlayLayout;
@@ -17,7 +16,13 @@ public class DaySummaryPanel extends JPanel {
     private BackgroundLayer  bg;
     private TopBarComponents topBar;
     private DaySummaryLayer  summaryLayer;
+    private ItemUse itemUse;
 
+
+    public ItemUse getItemUse() {
+            return itemUse;
+    }
+    
     public DaySummaryPanel(MainFrame mainPanel, SettingsPanel sharedSettings, InventoryPanel inventory) {
         this.mainPanel = mainPanel;
         this.settings  = sharedSettings;
@@ -46,25 +51,13 @@ public class DaySummaryPanel extends JPanel {
     private void initializeLayers() {
         bg = new BackgroundLayer();
         bg.setBackgroundFromFile("lightBG.jpg");
+        itemUse = new ItemUse(mainPanel, topBar, null);
 
         topBar = new TopBarComponents(mainPanel);
         topBar.setSettingsPanel(settings);
         topBar.setParentScreen("daySummary");
         topBar.setInventoryPanel(inventory);
         
-        inventory.setOnItemEffect((effectType, effectValue) -> {
-            ActiveEffects fx = mainPanel.getActiveEffects();
-            if (effectType == Item.EffectType.LP_FLAT) {
-                String activeChar = mainPanel.getRouteManager().hasActiveRoute()
-                    ? mainPanel.getRouteManager().getActiveCharacter() : null;
-                if (activeChar != null) {
-                    mainPanel.getRouteManager().addCharacterLP(activeChar, effectValue);
-                    topBar.addLpPoints(effectValue);
-                }
-            } else {
-                fx.apply(effectType, effectValue);
-            }
-        });
 
         summaryLayer = new DaySummaryLayer();
 

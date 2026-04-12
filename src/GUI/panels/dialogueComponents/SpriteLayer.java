@@ -51,10 +51,10 @@ public class SpriteLayer extends JPanel {
                 Image img = ImageIO.read(imgStream);
                 sprites.put(name, img);
             } else {
-                System.out.println("✗ Sprite not found: " + resourcePath);
+                System.out.println(resourcePath);
             }
         } catch (IOException e) {
-            System.out.println("✗ Error loading sprite: " + e.getMessage());
+            System.out.println( e.getMessage());
         }
     }
 
