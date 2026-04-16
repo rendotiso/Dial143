@@ -3,7 +3,6 @@ package Entities;
 import javax.sound.sampled.*;
 import java.io.BufferedInputStream;
 import java.io.InputStream;
-import java.net.URL;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -12,9 +11,9 @@ public class AudioPlayer {
     public enum Track {
         INTRO          ("/GUI/resources/audio/INTRO.wav"),
         GAMEPLAY       ("/GUI/resources/audio/GAMEPLAY.wav"),
-        GOOD_ENDING    ("/GUI/resources/audio/GOOD_ENDING.wav"),
-        BAD_ENDING     ("/GUI/resources/audio/BAD_ENDING.wav"),
-        NEUTRAL_ENDING ("/GUI/resources/audio/NEUTRAL_ENDING.wav");
+        GOOD_ENDING    ("/GUI/resources/audio/GOOD ENDING.wav"),
+        BAD_ENDING     ("/GUI/resources/audio/BAD ENDING.wav"),
+        NEUTRAL_ENDING ("/GUI/resources/audio/NEUTRAL ENDING.wav");
 
         public final String path;
         Track(String path) { this.path = path; }
@@ -27,7 +26,7 @@ public class AudioPlayer {
         if (instance == null) instance = new AudioPlayer();
         return instance;
     }
-    
+
     // ── State ─────────────────────────────────────────────────────────────────
 
     private Clip    currentClip  = null;
@@ -35,8 +34,9 @@ public class AudioPlayer {
     private float   volume       = 0.8f;
     private boolean muted        = false;
 
-    private final Map<Track, Boolean> loopMap = new HashMap<>();
+    private volatile boolean fadingOut = false;
 
+    private final Map<Track, Boolean> loopMap = new HashMap<>();
     private Mixer.Info preferredMixer = null;
 
     private AudioPlayer() {
@@ -50,17 +50,14 @@ public class AudioPlayer {
 
     private Mixer.Info detectMixer() {
         Mixer.Info[] mixers = AudioSystem.getMixerInfo();
-
         for (Mixer.Info m : mixers) {
             System.out.println("  " + m.getName() + " | " + m.getDescription());
         }
-
         for (Mixer.Info m : mixers) {
             if (m.getName().contains("plughw:1,0") && m.getDescription().contains("HDA Analog")) {
                 return m;
             }
         }
-
         for (Mixer.Info m : mixers) {
             String name = m.getName();
             String desc = m.getDescription();
@@ -71,13 +68,9 @@ public class AudioPlayer {
                 return m;
             }
         }
-
         for (Mixer.Info m : mixers) {
-            if (m.getName().startsWith("default")) {
-                return m;
-            }
+            if (m.getName().startsWith("default")) return m;
         }
-        
         return null;
     }
 
@@ -85,10 +78,13 @@ public class AudioPlayer {
 
     public void play(Track track) {
         if (track == currentTrack && currentClip != null && currentClip.isRunning()) return;
-        stopInternal();
 
+        stopInternal();
         Clip clip = loadClip(track);
-        if (clip == null) return;
+        if (clip == null) {
+            System.err.println("AudioPlayer: failed to load clip for " + track);
+            return;
+        }
 
         currentClip  = clip;
         currentTrack = track;
@@ -112,9 +108,7 @@ public class AudioPlayer {
     }
 
     public void pause() {
-        if (currentClip != null && currentClip.isRunning()) {
-            currentClip.stop();
-        }
+        if (currentClip != null && currentClip.isRunning()) currentClip.stop();
     }
 
     public void resume() {
@@ -129,12 +123,16 @@ public class AudioPlayer {
 
     public void fadeOut(int durationMs) {
         if (currentClip == null || !currentClip.isRunning()) return;
-        Clip  clipToFade = currentClip;
-        float startVol   = muted ? 0f : volume;
-        int   steps      = 40;
-        int   stepMs     = Math.max(1, durationMs / steps);
+
+        final Clip  clipToFade = currentClip;
+        final float startVol   = muted ? 0f : volume;
+        final int   steps      = 40;
+        final int   stepMs     = Math.max(1, durationMs / steps);
+
         currentClip  = null;
         currentTrack = null;
+        fadingOut    = true;
+
         Thread t = new Thread(() -> {
             for (int i = steps; i >= 0; i--) {
                 applyVolume(clipToFade, startVol * (i / (float) steps));
@@ -142,16 +140,25 @@ public class AudioPlayer {
             }
             clipToFade.stop();
             clipToFade.close();
+            fadingOut = false;
         }, "audio-fadeout");
         t.setDaemon(true);
         t.start();
     }
-
+    
     public void crossfadeTo(Track next, int durationMs) {
         fadeOut(durationMs);
-        javax.swing.Timer delay = new javax.swing.Timer(durationMs / 4, e -> play(next));
-        delay.setRepeats(false);
-        delay.start();
+
+        final int waitMs = durationMs + 50; 
+        Thread waiter = new Thread(() -> {
+            long deadline = System.currentTimeMillis() + waitMs;
+            while (fadingOut && System.currentTimeMillis() < deadline) {
+                try { Thread.sleep(20); } catch (InterruptedException e) { break; }
+            }
+            javax.swing.SwingUtilities.invokeLater(() -> play(next));
+        }, "audio-crossfade-wait");
+        waiter.setDaemon(true);
+        waiter.start();
     }
 
     public void setVolume(float v) {
@@ -170,8 +177,6 @@ public class AudioPlayer {
     public boolean isPlaying()            { return currentClip != null && currentClip.isRunning(); }
     public boolean isPlaying(Track track) { return track == currentTrack && isPlaying(); }
 
-    // ── Internal ──────────────────────────────────────────────────────────────
-
     private void stopInternal() {
         if (currentClip != null) {
             currentClip.stop();
@@ -182,40 +187,80 @@ public class AudioPlayer {
 
     private Clip loadClip(Track track) {
         try {
-            InputStream raw = AudioPlayer.class.getResourceAsStream(track.path);
-            if (raw == null) {
-                raw = AudioPlayer.class.getClassLoader()
-                        .getResourceAsStream(track.path.startsWith("/")
-                            ? track.path.substring(1) : track.path);
-            }
-            if (raw == null) {
-                return null;
-            }
+            AudioFormat[] formatsToTry = {
+                new AudioFormat(AudioFormat.Encoding.PCM_SIGNED, 44100, 16, 2, 4, 44100, false),
+                new AudioFormat(AudioFormat.Encoding.PCM_SIGNED, 44100, 16, 2, 4, 44100, true),
+                new AudioFormat(AudioFormat.Encoding.PCM_SIGNED, 44100, 16, 1, 2, 44100, false),
+                new AudioFormat(AudioFormat.Encoding.PCM_SIGNED, 48000, 16, 2, 4, 48000, false),
+                new AudioFormat(AudioFormat.Encoding.PCM_SIGNED, 44100, 24, 2, 6, 44100, false),
+            };
 
-            AudioInputStream ais = AudioSystem.getAudioInputStream(new BufferedInputStream(raw));
-            AudioFormat fmt = ais.getFormat();
+            AudioInputStream pcmStream = null;
+            AudioFormat      workingFormat = null;
 
-            if (!fmt.getEncoding().equals(AudioFormat.Encoding.PCM_SIGNED)
-                    && !fmt.getEncoding().equals(AudioFormat.Encoding.PCM_UNSIGNED)) {
-                ais = AudioSystem.getAudioInputStream(toPCM(fmt), ais);
+            for (AudioFormat fmt : formatsToTry) {
+                AudioInputStream raw = openStream(track);
+                if (raw == null) return null;
+                try {
+                    pcmStream     = AudioSystem.getAudioInputStream(fmt, raw);
+                    workingFormat = fmt;
+                    break;
+                } catch (IllegalArgumentException e) {
+                    raw.close(); 
+                }
+            }
+            if (pcmStream == null) {
+                AudioInputStream raw = openStream(track);
+                if (raw == null) return null;
+                AudioFormat src = raw.getFormat();
+                AudioFormat target = new AudioFormat(
+                    AudioFormat.Encoding.PCM_SIGNED,
+                    src.getSampleRate(),
+                    16,
+                    src.getChannels(),
+                    src.getChannels() * 2,
+                    src.getSampleRate(),
+                    false
+                );
+                pcmStream = AudioSystem.getAudioInputStream(target, raw);
             }
             
-            Clip clip;
             if (preferredMixer != null) {
-                Mixer mixer = AudioSystem.getMixer(preferredMixer);
-                DataLine.Info info = new DataLine.Info(Clip.class, ais.getFormat());
-                if (mixer.isLineSupported(info)) {
-                    clip = (Clip) mixer.getLine(info);
-                } else {
-                    clip = AudioSystem.getClip();
+                try {
+                    Mixer mixer = AudioSystem.getMixer(preferredMixer);
+                    DataLine.Info info = new DataLine.Info(Clip.class, pcmStream.getFormat());
+                    if (mixer.isLineSupported(info)) {
+                        Clip clip = (Clip) mixer.getLine(info);
+                        clip.open(pcmStream);
+                        return clip;
+                    }
+                } catch (Exception e) {
+                    System.err.println("Preferred mixer failed: " + e.getMessage());
                 }
-            } else {
-                clip = AudioSystem.getClip();
             }
-
-            clip.open(ais);
+            
+            Clip clip = AudioSystem.getClip();
+            clip.open(pcmStream);
             return clip;
 
+        } catch (Exception e) {
+            e.printStackTrace();
+            return null;
+        }
+    }
+    
+    private AudioInputStream openStream(Track track) {
+        InputStream raw = AudioPlayer.class.getResourceAsStream(track.path);
+        if (raw == null) {
+            String stripped = track.path.startsWith("/") ? track.path.substring(1) : track.path;
+            raw = AudioPlayer.class.getClassLoader().getResourceAsStream(stripped);
+        }
+        if (raw == null) {
+            System.err.println("AudioPlayer: resource not found: " + track.path);
+            return null;
+        }
+        try {
+            return AudioSystem.getAudioInputStream(new BufferedInputStream(raw));
         } catch (Exception e) {
             e.printStackTrace();
             return null;
@@ -237,12 +282,5 @@ public class AudioPlayer {
             FloatControl vol = (FloatControl) clip.getControl(FloatControl.Type.VOLUME);
             vol.setValue(Math.max(vol.getMinimum(), Math.min(vol.getMaximum(), linearVolume)));
         }
-    }
-
-    private AudioFormat toPCM(AudioFormat source) {
-        float rate     = source.getSampleRate() > 0 ? source.getSampleRate() : 44100f;
-        int   channels = source.getChannels()   > 0 ? source.getChannels()   : 2;
-        return new AudioFormat(AudioFormat.Encoding.PCM_SIGNED,
-                rate, 16, channels, channels * 2, rate, false);
     }
 }

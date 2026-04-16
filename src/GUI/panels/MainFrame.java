@@ -165,6 +165,7 @@ public class MainFrame extends JFrame {
             cardLayout.show(mainContainer, screenName);
             SwingUtilities.invokeLater(() -> {
                 switch (screenName) {
+                    case "title"    -> AudioPlayer.getInstance().play(AudioPlayer.Track.INTRO);
                     case "dialogue" -> dialoguePanel.loadContent();
                     case "shift"    -> shiftPanel.loadCall();
                     case "shop"     -> shopPanel.loadShop();
@@ -234,9 +235,9 @@ public void onEndDay() {
 
 
     public void onGameComplete() {
-        resetStats();
-        AudioPlayer.getInstance().crossfadeTo(AudioPlayer.Track.INTRO, 1200); // ← ADD
-        showScreen("title");
+            resetStats();
+            AudioPlayer.getInstance().stop();   // cleanly stop whatever ending track is playing
+            showScreen("title");                // showScreen's switch will call play(INTRO)
     }
 
     public DayInterface scriptForDay(int day) {
